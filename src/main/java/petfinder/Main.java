@@ -14,7 +14,7 @@ import petfinder.domain.observer.AlertaPropietarioObserver;
 import petfinder.domain.observer.AuditoriaObserver;
 import petfinder.domain.observer.PublicadorAvistamientos;
 import petfinder.domain.repository.RepositorioReportes;
-import petfinder.domain.repository.RepositorioReportesEnMemoria;
+import petfinder.infrastructure.persistence.RepositorioReportesEnMemoria;
 import petfinder.ui.EscenarioDemostracion;
 import petfinder.ui.MenuConsola;
 

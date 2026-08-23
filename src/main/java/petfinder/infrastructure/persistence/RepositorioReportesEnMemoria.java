@@ -1,4 +1,4 @@
-package petfinder.domain.repository;
+package petfinder.infrastructure.persistence;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import petfinder.domain.model.ReporteMascota;
-
+import petfinder.domain.repository.RepositorioReportes;
 /**
  * Implementación del repositorio que almacena los reportes en memoria.
  *

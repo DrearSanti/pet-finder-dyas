@@ -1,14 +1,13 @@
 package petfinder.application;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,7 @@ import petfinder.domain.model.ReportePerdida;
 import petfinder.domain.model.SolicitudReporte;
 import petfinder.domain.model.TipoReporte;
 import petfinder.domain.model.Ubicacion;
-import petfinder.domain.repository.RepositorioReportesEnMemoria;
+import petfinder.infrastructure.persistence.RepositorioReportesEnMemoria;
 
 /**
  * Pruebas del ciclo de vida de un reporte: creación polimórfica, consulta de

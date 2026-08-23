@@ -1,14 +1,13 @@
 package petfinder.application;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,7 @@ import petfinder.domain.model.Ubicacion;
 import petfinder.domain.observer.EventoAvistamiento;
 import petfinder.domain.observer.ObservadorAvistamiento;
 import petfinder.domain.observer.PublicadorAvistamientos;
-import petfinder.domain.repository.RepositorioReportesEnMemoria;
+import petfinder.infrastructure.persistence.RepositorioReportesEnMemoria;
 
 /**
  * Pruebas del registro de avistamientos y del patrón Observer.
