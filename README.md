@@ -1,7 +1,7 @@
 # Pet Finder
 
 Módulo funcional en Java para el Corte 1 de Diseño y Arquitectura de Software.
-Universidad de La Sabana, 2026-2.
+Universidad de La Sabana
 
 Red comunitaria de reportes y alertas para mascotas perdidas y encontradas.
 
@@ -128,7 +128,7 @@ Dónde se aplica: en las jerarquías `CreadorReporte` y `ObservadorAvistamiento`
 
 `ServicioReportes` recibe un `Map<TipoReporte, CreadorReporte>` armado en `Main`. Para agregar un tipo de reporte se crea el producto, su creador y se registra una entrada en ese mapa. `ServicioReportes` no cambia. Lo mismo del lado de las alertas: `PublicadorAvistamientos` recorre una lista de `ObservadorAvistamiento` sin conocer los tipos concretos, así que agregar un canal de notificación es escribir una clase nueva y suscribirla.
 
-Por qué esa decisión y no otra: la alternativa era un `switch (tipo)` dentro de una fábrica única. Funciona, pero cada tipo nuevo obliga a modificar ese condicional, que es precisamente lo que OCP busca evitar. El mapa traslada la decisión al punto de ensamblaje, donde configurar es lo esperado.
+¿Por qué esa decisión y no otra?: la alternativa era un `switch (tipo)` dentro de una fábrica única. Funciona, pero cada tipo nuevo obliga a modificar ese condicional, que es precisamente lo que OCP busca evitar. El mapa traslada la decisión al punto de ensamblaje, donde configurar es lo esperado.
 
 Detalle de diseño relacionado: `ServicioReportes.registrar` recibe el enum `TipoReporte`, no un `CreadorReporte` ya construido. Si recibiera el creador, la interfaz de usuario tendría que decidir cuál instanciar y el condicional reaparecería ahí. El punto de decisión queda en un solo lugar, `Main`.
 
@@ -138,7 +138,7 @@ Dónde se aplica: `ServicioReportes` y `ServicioAvistamientos` dependen de la in
 
 Evidencia verificable: buscar la palabra `infrastructure` en todo el proyecto devuelve exactamente dos archivos, la implementación del repositorio y `Main`. Ninguna clase de `domain` ni de `application` conoce el paquete de infraestructura.
 
-Por qué esa decisión y no otra: el almacenamiento es la frontera de sustitución real del sistema. Cambiar memoria por base de datos es la extensión más previsible, y la interfaz permite hacerlo sin tocar la lógica de negocio. Además hace las pruebas posibles sin infraestructura.
+¿Por qué esa decisión y no otra?: el almacenamiento es la frontera de sustitución real del sistema. Cambiar memoria por base de datos es la extensión más previsible, y la interfaz permite hacerlo sin tocar la lógica de negocio. Además hace las pruebas posibles sin infraestructura.
 
 Dónde **no** se aplicó y por qué: `GeneradorIdReportes` es una clase concreta. No existe una segunda forma de generar identificadores en este alcance ni razón para sustituirla en pruebas. Crear la interfaz por si acaso sería generalidad especulativa. DIP se aplica donde hay una frontera real de sustitución, no en todas partes.
 
@@ -175,7 +175,7 @@ La evidencia de que el patrón está implementado y no solo mencionado es la des
 
 ### 4.3 Modelado UML
 
-Los diagramas están embebidos con Mermaid, que GitHub renderiza de forma nativa. Los archivos fuente están en [`docs/uml/`](docs/uml/).
+Los diagramas están embebidos con Mermaid.
 
 #### Diagrama de clases
 
