@@ -40,7 +40,7 @@ Lo que **sí** hace este módulo:
 - Cambiar el estado de un reporte a resuelto o cerrado, respetando las transiciones válidas
 - Rechazar operaciones inválidas con mensajes de error claros
 
-Lo que queda **fuera de alcance** de este corte:
+Lo que queda **fuera de alcance**:
 
 Interfaz web o aplicación móvil, mapa y coordenadas GPS, base de datos, autenticación de usuarios, carga de imágenes, envío real de correos o notificaciones push, reconocimiento de imágenes con IA, emparejamiento automático entre pérdidas y hallazgos, moderación de contenido y despliegue en la nube.
 
