@@ -584,4 +584,4 @@ Tercera: `PublicadorAvistamientos` no importa ninguna de las dos clases de obser
 | **Mateo Ramírez** | Persistencia y patrón Observer. Contrato `RepositorioReportes`, implementación en memoria, publicador, interfaz de suscriptores y los dos observadores concretos. Documentación de patrones de diseño |
 | **Antonio Benítez** | Capa de aplicación e interfaz. Los dos servicios de casos de uso, demostración automática, menú interactivo y las once pruebas JUnit. Presentación del problema, atributos de calidad y análisis técnico. Coordinación del cómic |
 
-El historial de commits del repositorio refleja la contribución de cada integrante.
+El historial de commits del repositorio muestra la contribución de cada integrante.
