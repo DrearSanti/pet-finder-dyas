@@ -1,0 +1,37 @@
+classDiagram
+    direction LR
+
+    class ServicioAvistamientos {
+        +registrar(String, Avistamiento)
+    }
+    class PublicadorAvistamientos {
+        -List~ObservadorAvistamiento~ observadores
+        +suscribir(ObservadorAvistamiento)
+        +desuscribir(ObservadorAvistamiento)
+        +notificar(EventoAvistamiento)
+    }
+    class ObservadorAvistamiento {
+        <<interface>>
+        +actualizar(EventoAvistamiento)
+    }
+    class AlertaPropietarioObserver {
+        +actualizar(EventoAvistamiento)
+    }
+    class AuditoriaObserver {
+        -List~String~ registro
+        +actualizar(EventoAvistamiento)
+        +getRegistro() List~String~
+    }
+    class EventoAvistamiento {
+        <<record>>
+        -String idReporte
+        -String nombreMascota
+        -Avistamiento avistamiento
+        -LocalDateTime fechaHora
+    }
+
+    ServicioAvistamientos --> PublicadorAvistamientos
+    PublicadorAvistamientos o-- ObservadorAvistamiento
+    ObservadorAvistamiento <|.. AlertaPropietarioObserver
+    ObservadorAvistamiento <|.. AuditoriaObserver
+    PublicadorAvistamientos ..> EventoAvistamiento

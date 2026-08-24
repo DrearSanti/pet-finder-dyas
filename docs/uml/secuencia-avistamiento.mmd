@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor Ciudadano
+    participant UI as EscenarioDemostracion
+    participant Servicio as ServicioAvistamientos
+    participant Repo as RepositorioReportes
+    participant Reporte as ReportePerdida
+    participant Pub as PublicadorAvistamientos
+    participant Alerta as AlertaPropietarioObserver
+    participant Audit as AuditoriaObserver
+
+    Ciudadano->>UI: reporta un avistamiento
+    UI->>Servicio: registrar(idReporte, avistamiento)
+    Servicio->>Repo: buscarPorId(idReporte)
+    Repo-->>Servicio: Optional~ReporteMascota~
+    Servicio->>Servicio: obtenerPerdidaActiva(idReporte)
+    Servicio->>Reporte: agregarAvistamiento(avistamiento)
+    Servicio->>Repo: guardar(reporte)
+    Servicio->>Pub: notificar(evento)
+    Pub->>Alerta: actualizar(evento)
+    Pub->>Audit: actualizar(evento)
+    Servicio-->>UI: retorna
+    UI-->>Ciudadano: confirmacion en consola

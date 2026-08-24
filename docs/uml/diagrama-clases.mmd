@@ -1,0 +1,245 @@
+classDiagram
+    direction TB
+
+    class ReporteMascota {
+        <<abstract>>
+        -String id
+        -LocalDateTime fechaCreacion
+        -Ubicacion ubicacion
+        -String descripcion
+        -EstadoReporte estado
+        +resolver()
+        +cerrar()
+        +estaActivo() boolean
+        +resumen() String
+        -cambiarEstado(EstadoReporte)
+    }
+
+    class ReportePerdida {
+        -Mascota mascota
+        -Contacto contactoPropietario
+        -List~Avistamiento~ avistamientos
+        +agregarAvistamiento(Avistamiento)
+        +getAvistamientos() List~Avistamiento~
+        +resumen() String
+    }
+
+    class ReporteEncontrada {
+        -String descripcionMascota
+        -Contacto contactoReportante
+        +getDescripcionMascota() String
+        +getContactoReportante() Contacto
+        +resumen() String
+    }
+
+    class EstadoReporte {
+        <<enumeration>>
+        ACTIVO
+        RESUELTO
+        CERRADO
+        +permiteTransicionA(EstadoReporte) boolean
+    }
+
+    class TipoReporte {
+        <<enumeration>>
+        PERDIDA
+        ENCONTRADA
+    }
+
+    class Mascota {
+        <<record>>
+        -String nombre
+        -String especie
+        -String raza
+        -String color
+        -String senasParticulares
+    }
+
+    class Ubicacion {
+        <<record>>
+        -String zonaOBarrio
+        -String referencia
+    }
+
+    class Contacto {
+        <<record>>
+        -String nombre
+        -String medioContacto
+    }
+
+    class Avistamiento {
+        <<record>>
+        -String id
+        -LocalDateTime fechaHora
+        -Ubicacion ubicacion
+        -String descripcion
+        -Contacto contactoReportante
+    }
+
+    class SolicitudReporte {
+        <<record>>
+        -Ubicacion ubicacion
+        -String descripcion
+        -Contacto contacto
+        -Mascota mascota
+        -String descripcionMascota
+        +paraPerdida(...) SolicitudReporte
+        +paraEncontrada(...) SolicitudReporte
+    }
+
+    class GeneradorIdReportes {
+        -int secuencia
+        +siguiente() String
+    }
+
+    class CreadorReporte {
+        <<abstract>>
+        -GeneradorIdReportes generador
+        +preparar(SolicitudReporte) ReporteMascota
+        #crearReporte(SolicitudReporte, String) ReporteMascota
+        -validarDatosComunes(SolicitudReporte)
+        #esVacio(String) boolean
+    }
+
+    class CreadorReportePerdida {
+        #crearReporte(SolicitudReporte, String) ReporteMascota
+    }
+
+    class CreadorReporteEncontrada {
+        #crearReporte(SolicitudReporte, String) ReporteMascota
+    }
+
+    class RepositorioReportes {
+        <<interface>>
+        +guardar(ReporteMascota)
+        +buscarPorId(String) Optional~ReporteMascota~
+        +listarActivos() List~ReporteMascota~
+    }
+
+    class RepositorioReportesEnMemoria {
+        -Map~String,ReporteMascota~ reportes
+        +guardar(ReporteMascota)
+        +buscarPorId(String) Optional~ReporteMascota~
+        +listarActivos() List~ReporteMascota~
+    }
+
+    class ServicioReportes {
+        -RepositorioReportes repositorio
+        -Map~TipoReporte,CreadorReporte~ creadores
+        +registrar(TipoReporte, SolicitudReporte) ReporteMascota
+        +listarActivos() List~ReporteMascota~
+        +consultar(String) ReporteMascota
+        +resolver(String)
+        +cerrar(String)
+        -buscarOFallar(String) ReporteMascota
+    }
+
+    class ServicioAvistamientos {
+        -RepositorioReportes repositorio
+        -PublicadorAvistamientos publicador
+        +registrar(String, Avistamiento)
+        -obtenerPerdidaActiva(String) ReportePerdida
+    }
+
+    class PublicadorAvistamientos {
+        -List~ObservadorAvistamiento~ observadores
+        +suscribir(ObservadorAvistamiento)
+        +desuscribir(ObservadorAvistamiento)
+        +notificar(EventoAvistamiento)
+    }
+
+    class ObservadorAvistamiento {
+        <<interface>>
+        +actualizar(EventoAvistamiento)
+    }
+
+    class AlertaPropietarioObserver {
+        +actualizar(EventoAvistamiento)
+    }
+
+    class AuditoriaObserver {
+        -List~String~ registro
+        +actualizar(EventoAvistamiento)
+        +getRegistro() List~String~
+    }
+
+    class EventoAvistamiento {
+        <<record>>
+        -String idReporte
+        -String nombreMascota
+        -Avistamiento avistamiento
+        -LocalDateTime fechaHora
+    }
+
+    class DominioException {
+        <<abstract>>
+        +DominioException(String)
+    }
+
+    class DatosInvalidosException
+    class ReporteNoEncontradoException
+    class OperacionNoPermitidaException
+
+    class EscenarioDemostracion {
+        +ejecutar()
+    }
+
+    class MenuConsola {
+        -Scanner entrada
+        +ejecutar()
+    }
+
+    class Main {
+        +main(String[])
+    }
+
+    ReporteMascota <|-- ReportePerdida
+    ReporteMascota <|-- ReporteEncontrada
+    ReporteMascota *-- Ubicacion
+    ReporteMascota --> EstadoReporte
+    ReportePerdida *-- Mascota
+    ReportePerdida *-- Contacto
+    ReportePerdida o-- Avistamiento
+    ReporteEncontrada *-- Contacto
+    Avistamiento *-- Ubicacion
+
+    CreadorReporte <|-- CreadorReportePerdida
+    CreadorReporte <|-- CreadorReporteEncontrada
+    CreadorReporte --> GeneradorIdReportes
+    CreadorReporte ..> SolicitudReporte
+    CreadorReporte ..> ReporteMascota : crea
+    CreadorReportePerdida ..> ReportePerdida : instancia
+    CreadorReporteEncontrada ..> ReporteEncontrada : instancia
+
+    RepositorioReportes <|.. RepositorioReportesEnMemoria
+    RepositorioReportes ..> ReporteMascota
+
+    ServicioReportes --> RepositorioReportes
+    ServicioReportes --> CreadorReporte
+    ServicioReportes ..> TipoReporte
+    ServicioReportes ..> SolicitudReporte
+    ServicioAvistamientos --> RepositorioReportes
+    ServicioAvistamientos --> PublicadorAvistamientos
+    ServicioAvistamientos ..> ReportePerdida
+    ServicioAvistamientos ..> EventoAvistamiento
+
+    PublicadorAvistamientos o-- ObservadorAvistamiento
+    PublicadorAvistamientos ..> EventoAvistamiento
+    ObservadorAvistamiento <|.. AlertaPropietarioObserver
+    ObservadorAvistamiento <|.. AuditoriaObserver
+    EventoAvistamiento *-- Avistamiento
+
+    DominioException <|-- DatosInvalidosException
+    DominioException <|-- ReporteNoEncontradoException
+    DominioException <|-- OperacionNoPermitidaException
+
+    EscenarioDemostracion --> ServicioReportes
+    EscenarioDemostracion --> ServicioAvistamientos
+    EscenarioDemostracion --> PublicadorAvistamientos
+    MenuConsola --> ServicioReportes
+    MenuConsola --> ServicioAvistamientos
+    Main ..> EscenarioDemostracion
+    Main ..> MenuConsola
+    Main ..> CreadorReporte
+    Main ..> ObservadorAvistamiento
+    Main ..> RepositorioReportesEnMemoria

@@ -50,7 +50,7 @@ La aplicación con mapa y notificaciones reales es la visión futura del proyect
 
 ## 2. Creatividad en la Presentación
 
-Cómic de siete viñetas que explica el problema desde la experiencia de dos personas que nunca llegan a encontrarse: quien perdió a su mascota y quien la vio.
+Cómic de 14 paginas que explica el problema desde la experiencia de dos personas que nunca llegan a encontrarse: quien perdió a su mascota y quien la vio. Con inspiración y tematica de tipo Marvel.
 
 [Ver el cómic](docs/comic/pet-finder-comic.pdf)
 
@@ -175,7 +175,7 @@ La evidencia de que el patrón está implementado y no solo mencionado es la des
 
 ### 4.3 Modelado UML
 
-Los diagramas están embebidos con Mermaid.
+Los diagramas están embebidos con Mermaid. Los archivos fuente están en docs/uml/.
 
 #### Diagrama de clases
 

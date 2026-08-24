@@ -1,0 +1,31 @@
+classDiagram
+    direction LR
+
+    class ReporteMascota {
+        <<abstract>>
+        +resumen() String
+    }
+    class ReportePerdida
+    class ReporteEncontrada
+
+    class CreadorReporte {
+        <<abstract>>
+        +preparar(SolicitudReporte) ReporteMascota
+        #crearReporte(SolicitudReporte, String) ReporteMascota
+        -validarDatosComunes(SolicitudReporte)
+    }
+    class CreadorReportePerdida
+    class CreadorReporteEncontrada
+
+    class ServicioReportes {
+        -Map~TipoReporte,CreadorReporte~ creadores
+        +registrar(TipoReporte, SolicitudReporte) ReporteMascota
+    }
+
+    ReporteMascota <|-- ReportePerdida
+    ReporteMascota <|-- ReporteEncontrada
+    CreadorReporte <|-- CreadorReportePerdida
+    CreadorReporte <|-- CreadorReporteEncontrada
+    CreadorReportePerdida ..> ReportePerdida : instancia
+    CreadorReporteEncontrada ..> ReporteEncontrada : instancia
+    ServicioReportes --> CreadorReporte : usa la abstraccion
