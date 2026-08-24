@@ -585,12 +585,3 @@ Tercera: `PublicadorAvistamientos` no importa ninguna de las dos clases de obser
 | **Antonio Benítez** | Capa de aplicación e interfaz. Los dos servicios de casos de uso, demostración automática, menú interactivo y las once pruebas JUnit. Presentación del problema, atributos de calidad y análisis técnico. Coordinación del cómic |
 
 El historial de commits del repositorio refleja la contribución de cada integrante.
-
----
-
-## Entregables
-
-- [x] Repositorio en GitHub con código y documentación
-- [x] Wiki del proyecto según la plantilla del curso
-- [x] Código funcional con pruebas automatizadas
-- [ ] Presentación creativa del problema
