@@ -566,13 +566,13 @@ Tercera: `PublicadorAvistamientos` no importa ninguna de las dos clases de obser
 - **Persistencia en base de datos**: una implementación nueva de `RepositorioReportes`, sin tocar los servicios ni las pruebas de negocio
 - **Otra interfaz de usuario** (web, API REST): los servicios ya son independientes de la consola
 
-### Límites honestos del diseño
+### Límites del diseño
 
 - **Verificación de tipo en tiempo de ejecución.** `ServicioAvistamientos` usa `instanceof` para confirmar que el reporte es de tipo pérdida, porque solo ese tipo admite avistamientos. Es el costo de modelar los dos reportes como hermanos en una jerarquía. Está contenido en un único método privado, `obtenerPerdidaActiva`, y no repartido por el código. La alternativa era un repositorio especializado por tipo, que duplicaría el almacenamiento.
-- **Sin concurrencia.** El repositorio en memoria no es seguro para múltiples hilos. Cualquier versión multiusuario exigiría revisar ese punto.
+- **Sin concurrencia.** El repositorio en memoria no es seguro para múltiples hilos. Cualquier versión multiusuario requiere cambiar esto.
 - **Sin emparejamiento automático.** El sistema no cruza reportes de pérdida con reportes de hallazgo. Esa función requeriría criterios de similitud que quedaron fuera de alcance.
 - **Validación duplicada.** La verificación de estado existe en el servicio y en la entidad. Fue una decisión consciente para que la entidad proteja su propia regla, pero implica mantener dos lugares sincronizados.
-- **El ensamblaje manual crece.** `Main` construye todas las dependencias a mano. Con más componentes, esa clase se vuelve el punto más incómodo del proyecto.
+- **El ensamblaje manual crece.** `Main` construye todas las dependencias a mano. Con más componentes, esto se vuelve más complicado.
 
 ---
 
