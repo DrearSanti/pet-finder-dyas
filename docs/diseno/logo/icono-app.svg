@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-label="Pet Finder">
+  <rect width="1024" height="1024" rx="266" fill="#0B0B0C"/>
+  <g transform="translate(184 184) scale(3.28)" fill="none">
+    <circle cx="100" cy="100" r="16" fill="#FFFFFF"/>
+    <path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round"/>
+    <path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="153.74" cy="46.26" r="12" fill="#FFFFFF"/>
+  </g>
+</svg>

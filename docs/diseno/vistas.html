@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pet Finder · Sistema de diseño</title>
+<meta name="description" content="Referencia visual de Pet Finder: marca, tokens, componentes y vistas. Fuente: docs/diseno/DESIGN.md">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ===== Tokens (idénticos a DESIGN.md §13) ===== */
+:root {
+  --color-fondo:#F5F5F7; --color-superficie:#FFFFFF; --color-superficie-2:#F5F5F7;
+  --color-tinta:#0B0B0C; --color-texto-2:#6E6E73; --color-texto-3:#86868B;
+  --color-borde:rgba(0,0,0,.08); --color-acento:#0071E3; --color-sobre-tinta:#FFFFFF;
+  --estado-perdida:#FF5F1F; --estado-perdida-texto:#C2410C;
+  --estado-avistamiento:#F5A300; --estado-avistamiento-texto:#8A5A00;
+  --estado-encontrada:#7A5AF8; --estado-encontrada-texto:#5B3FD6;
+  --estado-resuelto:#1DB954; --estado-resuelto-texto:#0F7A36;
+  --fuente-ui:'Geist',system-ui,sans-serif; --fuente-editorial:'Instrument Serif',Georgia,serif;
+  --fuente-mono:'Geist Mono',ui-monospace,monospace;
+  --radio-control:12px; --radio-tarjeta:20px; --radio-foto:18px; --radio-hoja:32px; --radio-pildora:999px;
+  --sombra-suave:0 8px 24px rgba(0,0,0,.06); --sombra-flotante:0 10px 30px rgba(0,0,0,.12);
+  --sombra-hoja:0 -6px 30px rgba(0,0,0,.10);
+  --vidrio:rgba(255,255,255,.82); --curva:cubic-bezier(.2,.8,.2,1); --duracion:240ms;
+  --mapa-fondo:#EEEEF0; --mapa-parque:#E1ECDB; --mapa-agua:#DCE6F0; --mapa-via:#FFFFFF; --mapa-rotulo:#8E8E93;
+  --marco:#1D1D1F;
+}
+:root[data-tema="oscuro"] {
+  --color-fondo:#0B0B0C; --color-superficie:#1C1C1E; --color-superficie-2:#2C2C2E;
+  --color-tinta:#F5F5F7; --color-texto-2:#A1A1A6; --color-texto-3:#8E8E93;
+  --color-borde:rgba(255,255,255,.10); --color-acento:#0A84FF; --color-sobre-tinta:#0B0B0C;
+  --estado-perdida:#FF7A45; --estado-perdida-texto:#FF9A70;
+  --estado-avistamiento:#FFB31A; --estado-avistamiento-texto:#FFC94D;
+  --estado-encontrada:#9580FF; --estado-encontrada-texto:#B3A3FF;
+  --estado-resuelto:#30D158; --estado-resuelto-texto:#5EE082;
+  --vidrio:rgba(28,28,30,.72);
+  --mapa-fondo:#1A1A1C; --mapa-parque:#1F2A1E; --mapa-agua:#16202B; --mapa-via:#2C2C2E; --mapa-rotulo:#6E6E73;
+  --marco:#3A3A3C;
+}
+
+/* ===== Página de documentación ===== */
+* { box-sizing:border-box; }
+html { background:var(--color-fondo); }
+body { margin:0; color:var(--color-tinta); font-family:var(--fuente-ui); -webkit-font-smoothing:antialiased; }
+.doc { max-width:1320px; margin:0 auto; padding:40px 16px 96px; }
+.doc-top { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.lockup { display:flex; align-items:center; gap:10px; font-size:22px; font-weight:500; letter-spacing:-.03em; color:var(--color-tinta); }
+.lockup svg { width:28px; height:28px; }
+.lockup em { font-family:var(--fuente-editorial); font-weight:400; font-size:26px; letter-spacing:-.01em; }
+.tema { font:500 14px var(--fuente-ui); color:var(--color-tinta); background:var(--color-superficie); border:1px solid var(--color-borde); border-radius:var(--radio-pildora); padding:10px 16px; cursor:pointer; }
+.eyebrow { font:12px var(--fuente-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--color-texto-3); }
+h1.doc-h1 { font-family:var(--fuente-editorial); font-weight:400; font-size:clamp(44px,8vw,80px); letter-spacing:-.02em; line-height:1; margin:40px 0 12px; }
+.doc-sub { color:var(--color-texto-2); font-size:18px; line-height:1.5; max-width:720px; margin:0; }
+section.bloque { margin-top:72px; }
+h2.doc-h2 { font-family:var(--fuente-editorial); font-weight:400; font-size:40px; letter-spacing:-.02em; margin:6px 0 24px; }
+.panel { background:var(--color-superficie); border-radius:var(--radio-hoja); padding:24px; }
+.rejilla { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
+
+/* marca */
+.marca-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+.icono-app { aspect-ratio:1; max-width:240px; border-radius:26%; background:#0B0B0C; display:flex; align-items:center; justify-content:center; }
+.icono-app svg { width:64%; height:64%; color:#fff; }
+.tamanos { display:flex; align-items:end; gap:18px; }
+.tamanos div { border-radius:26%; background:#0B0B0C; display:flex; align-items:center; justify-content:center; color:#fff; }
+
+/* color */
+.muestra { background:var(--color-superficie); border-radius:24px; padding:12px 12px 16px; display:flex; flex-direction:column; gap:6px; }
+.muestra i { display:block; height:84px; border-radius:16px; border:1px solid var(--color-borde); }
+.muestra b { font-weight:600; font-size:15px; }
+.muestra code { font:12px var(--fuente-mono); color:var(--color-texto-2); }
+.muestra small { font-size:12px; color:var(--color-texto-3); line-height:1.4; }
+
+/* tipografía */
+.tipo-fila { display:grid; grid-template-columns:240px 1fr; gap:24px; align-items:baseline; padding:14px 0; border-top:1px solid var(--color-borde); }
+.tipo-fila:first-child { border-top:0; }
+.tipo-fila span { font:12px var(--fuente-mono); color:var(--color-texto-3); }
+@media (max-width:700px){ .tipo-fila { grid-template-columns:1fr; gap:6px; } }
+
+/* ===== Componentes (los mismos que usa la app) ===== */
+.btn { font:600 16px var(--fuente-ui); border:0; border-radius:var(--radio-pildora); padding:18px 24px; cursor:pointer; transition:transform var(--duracion) var(--curva); display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+.btn:active { transform:scale(.97); }
+.btn:focus-visible { outline:2px solid var(--color-acento); outline-offset:2px; }
+.btn-primario { background:var(--color-tinta); color:var(--color-sobre-tinta); }
+.btn-secundario { background:var(--color-superficie-2); color:var(--color-tinta); }
+.btn-texto { background:none; color:var(--color-acento); padding:8px 0; font-weight:500; }
+.estado { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:var(--radio-pildora); font:500 12px var(--fuente-ui); }
+.estado::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.estado.perdida { color:var(--estado-perdida-texto); background:color-mix(in srgb, var(--estado-perdida) 13%, transparent); }
+.estado.perdida::before { background:var(--estado-perdida); }
+.estado.avistamiento { color:var(--estado-avistamiento-texto); background:color-mix(in srgb, var(--estado-avistamiento) 16%, transparent); }
+.estado.avistamiento::before { background:var(--estado-avistamiento); }
+.estado.encontrada { color:var(--estado-encontrada-texto); background:color-mix(in srgb, var(--estado-encontrada) 13%, transparent); }
+.estado.encontrada::before { background:var(--estado-encontrada); }
+.estado.resuelto { color:var(--estado-resuelto-texto); background:color-mix(in srgb, var(--estado-resuelto) 13%, transparent); }
+.estado.resuelto::before { background:var(--estado-resuelto); }
+.mono { font:12px var(--fuente-mono); letter-spacing:.04em; color:var(--color-texto-3); text-transform:uppercase; }
+
+.segmentado { display:inline-flex; gap:2px; padding:3px; border-radius:var(--radio-pildora); background:var(--color-superficie-2); }
+.segmentado span { padding:6px 14px; border-radius:var(--radio-pildora); font:500 13px var(--fuente-ui); color:var(--color-texto-2); }
+.segmentado span.on { background:var(--color-superficie); color:var(--color-tinta); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+.tarjeta-mascota { width:176px; flex:none; background:var(--color-superficie-2); border-radius:24px; padding:8px 8px 14px; display:flex; flex-direction:column; gap:10px; }
+.foto { height:120px; border-radius:var(--radio-foto); display:flex; align-items:center; justify-content:center; }
+.foto svg { width:34px; height:34px; opacity:.55; }
+.foto.perdida { background:linear-gradient(160deg, color-mix(in srgb, var(--estado-perdida) 22%, var(--color-superficie)) 0%, var(--color-superficie) 100%); color:var(--estado-perdida); }
+.foto.avistamiento { background:linear-gradient(160deg, color-mix(in srgb, var(--estado-avistamiento) 24%, var(--color-superficie)) 0%, var(--color-superficie) 100%); color:var(--estado-avistamiento); }
+.foto.encontrada { background:linear-gradient(160deg, color-mix(in srgb, var(--estado-encontrada) 22%, var(--color-superficie)) 0%, var(--color-superficie) 100%); color:var(--estado-encontrada); }
+.tarjeta-mascota .txt { padding:0 6px; display:flex; flex-direction:column; gap:4px; align-items:flex-start; }
+.nombre { font:600 17px var(--fuente-ui); letter-spacing:-.02em; }
+.meta { font:400 13px var(--fuente-ui); color:var(--color-texto-2); }
+
+.tarjeta-viva { background:var(--color-superficie); border-radius:24px; padding:6px 16px; box-shadow:var(--sombra-suave); }
+.campo { display:flex; align-items:center; gap:10px; padding:11px 0; border-top:1px solid var(--color-borde); }
+.campo:first-child { border-top:0; }
+.campo .pt { width:8px; height:8px; border-radius:50%; flex:none; }
+.campo .k { width:78px; flex:none; font:500 14px var(--fuente-ui); color:var(--color-texto-3); }
+.campo .v { flex:1; font:600 15px var(--fuente-ui); letter-spacing:-.01em; }
+.campo .v.falta { color:var(--estado-perdida-texto); font-weight:500; }
+.campo .v.opcional { color:var(--color-texto-3); font-weight:500; }
+.campo.nuevo { animation:ilumina 1.6s var(--curva) 1; border-radius:10px; }
+@keyframes ilumina { 0%,30% { background:color-mix(in srgb, var(--color-acento) 12%, transparent); } 100% { background:transparent; } }
+
+.pregunta { display:flex; gap:10px; align-items:flex-start; background:var(--color-tinta); color:var(--color-sobre-tinta); border-radius:20px; padding:14px 16px 14px 14px; font:500 15px/1.4 var(--fuente-ui); }
+.pregunta svg { width:22px; height:22px; flex:none; margin-top:1px; }
+.transcripcion { background:var(--color-superficie); border-radius:20px; padding:16px; display:flex; flex-direction:column; gap:8px; }
+.transcripcion p { margin:0; font:400 17px/1.45 var(--fuente-ui); color:var(--color-tinta); }
+.transcripcion b { font-weight:600; }
+.aviso { display:inline-flex; align-items:center; gap:8px; background:var(--color-tinta); color:var(--color-sobre-tinta); border-radius:var(--radio-pildora); padding:12px 18px; font:500 15px var(--fuente-ui); }
+.aviso::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--estado-resuelto); }
+
+.mic { width:64px; height:64px; flex:none; border-radius:50%; border:0; display:flex; align-items:center; justify-content:center; background:var(--color-tinta); color:var(--color-sobre-tinta); position:relative; }
+.mic svg { width:26px; height:26px; }
+.mic.escuchando { background:var(--estado-perdida); color:#fff; }
+.mic.escuchando::before, .mic.escuchando::after { content:""; position:absolute; inset:-6px; border-radius:50%; border:2px solid var(--estado-perdida); opacity:.5; animation:onda 1.6s var(--curva) infinite; }
+.mic.escuchando::after { animation-delay:.8s; }
+@keyframes onda { from { transform:scale(.9); opacity:.55; } to { transform:scale(1.5); opacity:0; } }
+
+/* ===== Teléfonos ===== */
+.telefonos { display:flex; flex-wrap:wrap; gap:40px; justify-content:center; }
+.vista { display:flex; flex-direction:column; gap:14px; align-items:center; }
+.vista-titulo { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.vista-titulo b { font-weight:600; font-size:16px; }
+.telefono { width:393px; height:852px; border-radius:56px; background:var(--color-fondo); position:relative; overflow:hidden; box-shadow:0 0 0 10px var(--marco), 0 30px 60px rgba(0,0,0,.18); flex:none; }
+.telefono .barra-estado { position:absolute; top:16px; left:44px; font:600 17px var(--fuente-ui); z-index:5; color:var(--color-tinta); }
+.telefono .isla { position:absolute; top:11px; left:50%; transform:translateX(-50%); width:124px; height:36px; border-radius:20px; background:#000; z-index:6; }
+@media (max-width:460px){ .telefono { transform:scale(.86); transform-origin:top center; margin-bottom:-120px; } }
+.pantalla { position:absolute; inset:0; padding:64px 20px 28px; display:flex; flex-direction:column; gap:18px; }
+.fila { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.titular { font-family:var(--fuente-editorial); font-weight:400; font-size:38px; line-height:1.08; letter-spacing:-.02em; margin:0; }
+
+/* mapa */
+.mapa { position:absolute; left:0; right:0; top:0; }
+.mapa svg.base { display:block; width:100%; height:100%; }
+.rotulo { position:absolute; font:500 10px var(--fuente-ui); letter-spacing:.08em; color:var(--mapa-rotulo); }
+.pin { position:absolute; width:30px; height:30px; border-radius:50%; border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.18); display:flex; align-items:center; justify-content:center; transform:translate(-50%,-50%); }
+.pin::after { content:""; width:7px; height:7px; border-radius:50%; background:#fff; }
+.pin.perdida { background:var(--estado-perdida); } .pin.avistamiento { background:var(--estado-avistamiento); }
+.pin.encontrada { background:var(--estado-encontrada); } .pin.resuelto { background:var(--estado-resuelto); }
+.pin.sel { width:36px; height:36px; }
+.pin.sel::before { content:""; position:absolute; inset:-22px; border-radius:50%; background:color-mix(in srgb, var(--estado-perdida) 12%, transparent); border:1px solid color-mix(in srgb, var(--estado-perdida) 35%, transparent); animation:pulso 2.4s var(--curva) infinite; }
+@keyframes pulso { 0% { transform:scale(.6); opacity:1; } 100% { transform:scale(1.25); opacity:0; } }
+.vidrio { background:var(--vidrio); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); border:1px solid color-mix(in srgb, #fff 60%, transparent); box-shadow:var(--sombra-flotante); }
+:root[data-tema="oscuro"] .vidrio { border-color:rgba(255,255,255,.08); }
+.buscador { position:absolute; left:16px; right:16px; top:58px; border-radius:var(--radio-pildora); padding:13px 14px 13px 16px; display:flex; align-items:center; gap:10px; font:400 16px var(--fuente-ui); color:var(--color-texto-2); z-index:4; }
+.buscador .ir { margin-left:auto; width:30px; height:30px; border-radius:26%; background:#0B0B0C; color:#fff; display:flex; align-items:center; justify-content:center; }
+.buscador .ir svg { width:20px; height:20px; }
+.hoja { position:absolute; left:0; right:0; bottom:0; background:var(--color-superficie); border-radius:var(--radio-hoja) var(--radio-hoja) 0 0; box-shadow:var(--sombra-hoja); padding:10px 20px 120px; display:flex; flex-direction:column; gap:16px; }
+.agarradera { width:36px; height:5px; border-radius:3px; background:var(--color-borde); background:color-mix(in srgb, var(--color-texto-3) 45%, transparent); align-self:center; }
+.carrusel { display:flex; gap:12px; overflow:hidden; margin-right:-20px; }
+.pestanas { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); width:300px; border-radius:var(--radio-pildora); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; z-index:6; }
+.pestana { display:flex; flex-direction:column; align-items:center; gap:3px; font:500 11px var(--fuente-ui); color:var(--color-texto-3); }
+.pestana.on { color:var(--color-tinta); }
+.pestana svg { width:24px; height:24px; }
+.pestanas .mic { width:60px; height:60px; }
+.flotante-ubicacion { position:absolute; right:16px; bottom:436px; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--color-acento); z-index:4; }
+.flotante-ubicacion svg { width:20px; height:20px; }
+
+/* detalle */
+.heroe { height:330px; display:flex; align-items:center; justify-content:center; background:linear-gradient(150deg, color-mix(in srgb, var(--estado-perdida) 25%, var(--color-superficie)) 0%, var(--color-superficie-2) 100%); color:var(--estado-perdida); position:relative; }
+.heroe svg.huella { width:72px; height:72px; opacity:.35; }
+.heroe .volver { position:absolute; top:56px; left:16px; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--color-tinta); }
+.heroe .volver svg { width:20px; height:20px; }
+.display { font-family:var(--fuente-editorial); font-weight:400; font-size:52px; letter-spacing:-.02em; line-height:1.05; margin:0; }
+.datos { display:flex; gap:10px; }
+.dato { flex:1; background:var(--color-superficie-2); border-radius:18px; padding:12px; display:flex; flex-direction:column; gap:4px; }
+.dato small { font:500 11px var(--fuente-ui); color:var(--color-texto-3); }
+.dato b { font:600 15px var(--fuente-ui); letter-spacing:-.01em; }
+.pista { display:flex; gap:12px; align-items:center; }
+.pista i { width:10px; height:10px; border-radius:50%; background:var(--estado-avistamiento); flex:none; }
+.pista b { display:block; font:500 15px var(--fuente-ui); }
+.pista span { font:400 13px var(--fuente-ui); color:var(--color-texto-3); }
+
+/* publicado */
+.orbita { width:120px; height:120px; color:var(--color-tinta); }
+.orbita .gira { transform-origin:100px 100px; animation:gira 3.2s linear infinite; }
+@keyframes gira { to { transform:rotate(360deg); } }
+
+/* ===== Escritorio ===== */
+.escritorio-marco { width:100%; overflow:hidden; border-radius:24px; box-shadow:0 0 0 1px var(--color-borde), 0 30px 60px rgba(0,0,0,.14); }
+.escritorio { width:1280px; height:800px; background:var(--color-fondo); display:grid; grid-template-columns:360px 1fr 380px; transform-origin:top left; }
+.col { padding:24px; display:flex; flex-direction:column; gap:18px; overflow:hidden; }
+.col-izq { background:var(--color-superficie); border-right:1px solid var(--color-borde); }
+.col-der { background:var(--color-superficie); border-left:1px solid var(--color-borde); }
+.col-mapa { position:relative; padding:0; }
+.filtros { display:flex; gap:8px; flex-wrap:wrap; }
+.filtro { padding:7px 12px; border-radius:var(--radio-pildora); background:var(--color-superficie-2); font:500 13px var(--fuente-ui); color:var(--color-texto-2); }
+.filtro.on { background:var(--color-tinta); color:var(--color-sobre-tinta); }
+.caso { display:flex; gap:12px; align-items:center; padding:10px; border-radius:18px; }
+.caso.on { background:var(--color-superficie-2); }
+.caso .mini { width:56px; height:56px; border-radius:14px; flex:none; display:flex; align-items:center; justify-content:center; }
+.caso .mini svg { width:22px; height:22px; opacity:.6; }
+.caso .t { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+.actividad { display:flex; flex-direction:column; gap:14px; }
+.evento { display:grid; grid-template-columns:44px 10px 1fr; gap:10px; align-items:start; }
+.evento time { font:12px var(--fuente-mono); color:var(--color-texto-3); padding-top:2px; }
+.evento i { width:8px; height:8px; border-radius:50%; margin-top:6px; }
+.evento b { font:500 14px var(--fuente-ui); display:block; }
+.evento span { font:400 13px var(--fuente-ui); color:var(--color-texto-3); }
+.en-vivo { display:inline-flex; align-items:center; gap:6px; font:12px var(--fuente-mono); letter-spacing:.06em; color:var(--estado-resuelto-texto); }
+.en-vivo::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--estado-resuelto); animation:late 1.6s ease-in-out infinite; }
+@keyframes late { 50% { opacity:.3; } }
+.acciones-mapa { position:absolute; left:50%; bottom:28px; transform:translateX(-50%); display:flex; gap:10px; align-items:center; border-radius:var(--radio-pildora); padding:8px; z-index:4; }
+
+/* ===== Escritorio: pantallas adicionales ===== */
+.pantallas-escritorio { display:flex; flex-direction:column; gap:56px; }
+.pantalla-escritorio { display:flex; flex-direction:column; gap:14px; }
+.pantalla-escritorio .vista-titulo { align-items:flex-start; }
+.lienzo { position:relative; transform-origin:top left; overflow:hidden; }
+.escritorio.dos { grid-template-columns:360px 1fr; }
+.velo { position:absolute; inset:0; background:rgba(11,11,12,.32); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; z-index:8; }
+.modal { width:800px; background:var(--color-fondo); border-radius:var(--radio-hoja); padding:28px; display:grid; grid-template-columns:1fr 1fr; gap:24px; box-shadow:0 30px 80px rgba(0,0,0,.25); }
+.modal .col-m { display:flex; flex-direction:column; gap:16px; }
+.cerrar { width:36px; height:36px; border-radius:50%; background:var(--color-superficie-2); display:flex; align-items:center; justify-content:center; color:var(--color-texto-2); flex:none; }
+.cerrar svg { width:16px; height:16px; }
+.entrada { flex:1; background:var(--color-superficie); border:1px solid var(--color-borde); border-radius:var(--radio-pildora); padding:14px 18px; font:400 15px var(--fuente-ui); color:var(--color-texto-3); }
+.confirmacion { width:440px; background:var(--color-superficie); border-radius:var(--radio-hoja); padding:36px 32px 28px; display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.25); }
+.pagina { padding:28px 36px; display:grid; grid-template-columns:1.05fr 1fr; gap:32px; align-content:start; overflow:hidden; }
+.pagina .col-p { display:flex; flex-direction:column; gap:18px; }
+.migas { display:flex; align-items:center; gap:8px; font:500 14px var(--fuente-ui); color:var(--color-texto-3); grid-column:1 / -1; }
+.migas b { color:var(--color-tinta); font-weight:500; }
+.mapa-mini { position:relative; height:250px; border-radius:var(--radio-tarjeta); overflow:hidden; }
+.mapa-mini svg { position:absolute; inset:0; width:100%; height:100%; }
+.globo { position:absolute; border-radius:14px; padding:10px 14px; font:500 13px var(--fuente-ui); color:var(--color-tinta); z-index:4; white-space:nowrap; }
+.tablet { width:1024px; height:768px; background:var(--color-fondo); display:grid; grid-template-columns:340px 1fr; }
+.marco-tablet { max-width:1024px; margin:0 auto; border-radius:36px; box-shadow:0 0 0 12px var(--marco), 0 30px 60px rgba(0,0,0,.18); }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="doc-top">
+    <div class="lockup">
+      <svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="18" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="15" fill="currentColor"/></svg>
+      Pet <em>Finder</em>
+    </div>
+    <button class="tema" id="tema" type="button">Ver en modo oscuro</button>
+  </div>
+
+  <h1 class="doc-h1">Sistema de diseño</h1>
+  <p class="doc-sub">Referencia visual de todas las vistas y componentes. Cada color, tipo y medida sale de <code>docs/diseno/DESIGN.md</code>. Si algo cambia aquí, cambia allá primero.</p>
+
+  <!-- ===== MARCA ===== -->
+  <section class="bloque">
+    <div class="eyebrow">01 · Marca</div>
+    <h2 class="doc-h2">Órbita abierta</h2>
+    <div class="marca-grid">
+      <div class="panel" style="display:flex;flex-direction:column;gap:16px">
+        <div class="icono-app"><svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="16" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="12" fill="currentColor"/></svg></div>
+        <span class="mono">Ícono de app · logo/icono-app.svg</span>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:24px;justify-content:space-between">
+        <div class="lockup" style="font-size:40px;gap:14px"><svg viewBox="0 0 200 200" fill="none" style="width:48px;height:48px"><circle cx="100" cy="100" r="16" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="14" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="13" fill="currentColor"/></svg>Pet <em style="font-size:46px">Finder</em></div>
+        <div class="tamanos">
+          <div style="width:64px;height:64px"><svg viewBox="0 0 200 200" fill="none" style="width:64%;height:64%"><circle cx="100" cy="100" r="16" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="12" fill="currentColor"/></svg></div>
+          <div style="width:40px;height:40px"><svg viewBox="0 0 200 200" fill="none" style="width:64%;height:64%"><circle cx="100" cy="100" r="18" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="15" fill="currentColor"/></svg></div>
+          <div style="width:24px;height:24px"><svg viewBox="0 0 200 200" fill="none" style="width:66%;height:66%"><circle cx="100" cy="100" r="20" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="22" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="22" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="18" fill="currentColor"/></svg></div>
+          <div style="width:16px;height:16px"><svg viewBox="0 0 200 200" fill="none" style="width:70%;height:70%"><circle cx="100" cy="100" r="20" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="22" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="22" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="18" fill="currentColor"/></svg></div>
+        </div>
+        <span class="mono">Nombre · Geist + Instrument Serif itálica · tamaños 64 / 40 / 24 / 16</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COLOR ===== -->
+  <section class="bloque">
+    <div class="eyebrow">02 · Color</div>
+    <h2 class="doc-h2">Neutros, acento y estados</h2>
+    <div class="rejilla">
+      <div class="muestra"><i style="background:var(--color-tinta)"></i><b>Tinta</b><code>--color-tinta</code><small>Texto y botón primario</small></div>
+      <div class="muestra"><i style="background:var(--color-texto-2)"></i><b>Niebla</b><code>--color-texto-2</code><small>Texto secundario</small></div>
+      <div class="muestra"><i style="background:var(--color-fondo)"></i><b>Perla</b><code>--color-fondo</code><small>Lienzo</small></div>
+      <div class="muestra"><i style="background:var(--color-superficie)"></i><b>Superficie</b><code>--color-superficie</code><small>Tarjetas y hojas</small></div>
+      <div class="muestra"><i style="background:var(--color-acento)"></i><b>Acento</b><code>--color-acento</code><small>Enlaces y selección · provisional</small></div>
+    </div>
+    <div class="rejilla" style="margin-top:16px">
+      <div class="muestra"><i style="background:var(--estado-perdida)"></i><b>Perdida</b><code>--estado-perdida</code><span class="estado perdida">Perdida</span></div>
+      <div class="muestra"><i style="background:var(--estado-avistamiento)"></i><b>Avistamiento</b><code>--estado-avistamiento</code><span class="estado avistamiento">Avistamiento</span></div>
+      <div class="muestra"><i style="background:var(--estado-encontrada)"></i><b>Encontrada</b><code>--estado-encontrada</code><span class="estado encontrada">Encontrada</span></div>
+      <div class="muestra"><i style="background:var(--estado-resuelto)"></i><b>Resuelto</b><code>--estado-resuelto</code><span class="estado resuelto">Resuelto</span></div>
+    </div>
+  </section>
+
+  <!-- ===== TIPOGRAFÍA ===== -->
+  <section class="bloque">
+    <div class="eyebrow">03 · Tipografía</div>
+    <h2 class="doc-h2">Instrument Serif, Geist y Geist Mono</h2>
+    <div class="panel">
+      <div class="tipo-fila"><span>Display · Serif 52</span><div class="display">Luna volvió a casa.</div></div>
+      <div class="tipo-fila"><span>Titular · Serif 38</span><div class="titular">Cuéntanos qué pasó</div></div>
+      <div class="tipo-fila"><span>Título 1 · Geist 24 / 600</span><div style="font:600 24px var(--fuente-ui);letter-spacing:-.03em">Cerca de ti</div></div>
+      <div class="tipo-fila"><span>Título 2 · Geist 17 / 600</span><div class="nombre">Luna · perra criolla</div></div>
+      <div class="tipo-fila"><span>Cuerpo · Geist 17</span><div style="font:400 17px/1.45 var(--fuente-ui)">Blanca con una mancha negra en el lomo. Lleva collar rojo.</div></div>
+      <div class="tipo-fila"><span>Secundario · Geist 15 / 500</span><div style="font:500 15px var(--fuente-ui);color:var(--color-texto-2)">Cedritos · hace 2 h</div></div>
+      <div class="tipo-fila"><span>Etiqueta · Geist Mono 12</span><div class="mono">PF-001 · Activo</div></div>
+    </div>
+  </section>
+
+  <!-- ===== COMPONENTES ===== -->
+  <section class="bloque">
+    <div class="eyebrow">04 · Componentes</div>
+    <h2 class="doc-h2">Piezas de la interfaz</h2>
+    <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+      <div class="panel" style="display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+        <span class="mono">Botones</span>
+        <button class="btn btn-primario" type="button">Publicar reporte</button>
+        <button class="btn btn-secundario" type="button">Compartir</button>
+        <button class="btn btn-texto" type="button">Cancelar</button>
+        <div class="fila" style="gap:16px"><button class="mic" type="button" aria-label="Hablar"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="mic escuchando" type="button" aria-label="Escuchando"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="meta">Reposo · escuchando</span></div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+        <span class="mono">Estados, segmentado y aviso</span>
+        <div class="filtros"><span class="estado perdida">Perdida</span><span class="estado avistamiento">Avistamiento</span><span class="estado encontrada">Encontrada</span><span class="estado resuelto">Resuelto</span></div>
+        <div class="segmentado"><span class="on">Hablar</span><span>Escribir</span></div>
+        <div class="segmentado"><span class="on">Mapa</span><span>Lista</span></div>
+        <span class="aviso">Reporte publicado</span>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+        <span class="mono">Tarjeta de mascota</span>
+        <div class="tarjeta-mascota"><div class="foto perdida"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="txt"><span class="estado perdida">Perdida</span><span class="nombre">Luna</span><span class="meta">Cedritos · hace 2 h</span></div></div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;gap:14px">
+        <span class="mono">Tarjeta viva y asistente</span>
+        <div class="tarjeta-viva">
+          <div class="campo"><i class="pt" style="background:var(--color-acento)"></i><span class="k">Nombre</span><span class="v">Luna</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="campo"><i class="pt" style="background:var(--estado-perdida)"></i><span class="k">Contacto</span><span class="v falta">Falta</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--estado-perdida)" stroke-width="2" stroke-dasharray="3 3"/></svg></div>
+        </div>
+        <div class="pregunta"><svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="18" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="15" fill="currentColor"/></svg>¿A qué número te pueden escribir si alguien ve a Luna?</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VISTAS MÓVILES ===== -->
+  <section class="bloque">
+    <div class="eyebrow">05 · Vistas · celular y PWA</div>
+    <h2 class="doc-h2">Cinco pantallas</h2>
+    <div class="telefonos">
+
+      <!-- 01 INICIO -->
+      <div class="vista">
+        <div class="telefono">
+          <div class="isla"></div><div class="barra-estado">9:41</div>
+          <div class="mapa" style="height:600px">
+            <svg class="base" viewBox="0 0 393 600" preserveAspectRatio="none"><rect width="393" height="600" fill="var(--mapa-fondo)"/><rect x="222" y="170" width="140" height="104" rx="22" fill="var(--mapa-parque)"/><rect x="26" y="392" width="96" height="70" rx="18" fill="var(--mapa-parque)"/><path d="M0 500 C90 470 170 540 270 512 C330 496 360 480 393 486 V600 H0Z" fill="var(--mapa-agua)"/><g stroke="var(--mapa-via)" fill="none"><path d="M-10 238 L410 196" stroke-width="16"/><path d="M150 -10 L186 610" stroke-width="14"/><path d="M-10 380 C120 350 250 410 410 366" stroke-width="18"/><path d="M-10 120 L410 96" stroke-width="7"/><path d="M60 -10 L80 610" stroke-width="7"/><path d="M300 -10 L320 610" stroke-width="7"/><path d="M-10 300 L410 286" stroke-width="6"/><path d="M-10 452 L410 440" stroke-width="6"/></g><path d="M265 224 L112 268" stroke="var(--estado-avistamiento)" stroke-width="2" stroke-dasharray="5 5" opacity=".6"/></svg>
+            <span class="rotulo" style="left:196px;top:146px">CEDRITOS</span><span class="rotulo" style="left:234px;top:284px">PARQUE DE LA 147</span><span class="rotulo" style="left:40px;top:330px">USAQUÉN</span>
+            <span class="pin perdida sel" style="left:265px;top:224px"></span><span class="pin avistamiento" style="left:112px;top:268px"></span><span class="pin avistamiento" style="left:318px;top:348px"></span><span class="pin encontrada" style="left:74px;top:428px"></span><span class="pin perdida" style="left:212px;top:420px"></span>
+          </div>
+          <div class="buscador vidrio"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Buscar mascota o barrio<span class="ir"><svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="20" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="22" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="22" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="18" fill="currentColor"/></svg></span></div>
+          <div class="flotante-ubicacion vidrio"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div>
+          <div class="hoja" style="top:430px">
+            <div class="agarradera"></div>
+            <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 24px var(--fuente-ui);letter-spacing:-.03em">Cerca de ti</span><span class="meta" style="font-weight:500">3 activos · 2 km</span></div>
+            <div class="carrusel">
+              <div class="tarjeta-mascota"><div class="foto perdida"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="txt"><span class="estado perdida">Perdida</span><span class="nombre">Luna</span><span class="meta">Cedritos · hace 2 h</span></div></div>
+              <div class="tarjeta-mascota"><div class="foto avistamiento"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="txt"><span class="estado avistamiento">Avistamiento</span><span class="nombre">Max</span><span class="meta">Usaquén · hace 20 min</span></div></div>
+            </div>
+          </div>
+          <div class="pestanas vidrio">
+            <div class="pestana on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 4L3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4z"/><path d="M9 4v13.5M15 6.5V20"/></svg>Explorar</div>
+            <button class="mic" type="button" aria-label="Reportar por voz"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            <div class="pestana"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15L6 16z"/><path d="M10 21h4" stroke-linecap="round"/></svg>Actividad</div>
+          </div>
+        </div>
+        <div class="vista-titulo"><span class="mono">01</span><b>Inicio</b></div>
+      </div>
+
+      <!-- 02 NUEVO REPORTE -->
+      <div class="vista">
+        <div class="telefono">
+          <div class="isla"></div><div class="barra-estado">9:41</div>
+          <div class="pantalla">
+            <div class="fila"><button class="btn btn-texto" type="button" style="font-size:16px;font-weight:400">Cancelar</button><div class="segmentado"><span class="on">Hablar</span><span>Escribir</span></div></div>
+            <h3 class="titular">Cuéntanos qué pasó</h3>
+            <div class="transcripcion"><span class="mono">Escuchando…</span><p>Se me <b style="color:var(--estado-perdida-texto)">perdió</b> mi <b style="color:var(--estado-encontrada-texto)">perrita</b> <b style="color:var(--color-acento)">Luna</b> esta tarde en <b style="color:var(--estado-resuelto-texto)">Cedritos</b>. Es <b style="color:var(--estado-avistamiento-texto)">blanca</b>, con una <b style="color:var(--estado-avistamiento-texto)">mancha negra en el lomo</b>.</p></div>
+            <div class="tarjeta-viva">
+              <div class="campo"><i class="pt" style="background:var(--estado-perdida)"></i><span class="k">Reporte</span><span class="v">Mascota perdida</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--color-acento)"></i><span class="k">Nombre</span><span class="v">Luna</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--estado-encontrada)"></i><span class="k">Especie</span><span class="v">Perro</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--estado-avistamiento)"></i><span class="k">Aspecto</span><span class="v">Blanca · mancha negra en el lomo</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo nuevo"><i class="pt" style="background:var(--estado-resuelto)"></i><span class="k">Zona</span><span class="v">Cedritos</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--estado-perdida)"></i><span class="k">Contacto</span><span class="v falta">Falta</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--estado-perdida)" stroke-width="2" stroke-dasharray="3 3"/></svg></div>
+            </div>
+            <div class="pregunta"><svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="18" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="15" fill="currentColor"/></svg>¿A qué número te pueden escribir si alguien ve a Luna?</div>
+            <div class="fila" style="margin-top:auto"><button class="mic escuchando" type="button" aria-label="Escuchando"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn btn-primario" type="button" style="flex:1">Revisar y publicar</button></div>
+          </div>
+        </div>
+        <div class="vista-titulo"><span class="mono">02</span><b>Nuevo reporte · tarjeta viva</b></div>
+      </div>
+
+      <!-- 03 DETALLE -->
+      <div class="vista">
+        <div class="telefono" style="background:var(--color-superficie)">
+          <div class="isla"></div><div class="barra-estado">9:41</div>
+          <div class="heroe">
+            <span class="volver vidrio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></span>
+            <svg class="huella" viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg>
+          </div>
+          <div style="padding:22px;display:flex;flex-direction:column;gap:18px">
+            <div class="fila" style="justify-content:flex-start"><span class="estado perdida" style="font-size:13px">Perdida</span><span class="mono">PF-001 · hace 2 h</span></div>
+            <div><h3 class="display">Luna</h3><span class="meta" style="font-size:15px">Perra criolla · blanca · mancha negra en el lomo</span></div>
+            <div class="datos"><div class="dato"><small>Zona</small><b>Cedritos</b></div><div class="dato"><small>Última vez</small><b>Parque 147</b></div><div class="dato"><small>Pistas</small><b>3</b></div></div>
+            <div style="display:flex;flex-direction:column;gap:12px"><span class="nombre">Pistas de la comunidad</span>
+              <div class="pista"><i></i><div><b>Canchas del parque de la 147</b><span>Lorenzi · hace 10 min</span></div></div>
+              <div class="pista"><i></i><div><b>Calle 140 con 11</b><span>Anónimo · hace 1 h</span></div></div>
+            </div>
+            <div class="fila"><button class="btn btn-primario" type="button" style="flex:1">La vi</button><button class="btn btn-secundario" type="button">Compartir</button></div>
+          </div>
+        </div>
+        <div class="vista-titulo"><span class="mono">03</span><b>Detalle del caso</b></div>
+      </div>
+
+      <!-- 04 AVISTAMIENTO -->
+      <div class="vista">
+        <div class="telefono">
+          <div class="isla"></div><div class="barra-estado">9:41</div>
+          <div class="pantalla">
+            <div class="fila"><button class="btn btn-texto" type="button" style="font-size:16px;font-weight:400">Cancelar</button><span class="estado perdida">Luna · PF-001</span></div>
+            <h3 class="titular">¿Dónde viste a Luna?</h3>
+            <div style="position:relative;height:190px;border-radius:var(--radio-tarjeta);overflow:hidden">
+              <svg viewBox="0 0 353 190" preserveAspectRatio="none" style="width:100%;height:100%;display:block"><rect width="353" height="190" fill="var(--mapa-fondo)"/><rect x="170" y="36" width="130" height="90" rx="18" fill="var(--mapa-parque)"/><g stroke="var(--mapa-via)"><path d="M-10 150 L370 120" stroke-width="14"/><path d="M120 -10 L140 200" stroke-width="12"/><path d="M-10 60 L370 44" stroke-width="6"/></g></svg>
+              <span class="pin avistamiento sel" style="left:228px;top:84px"></span>
+              <span class="rotulo" style="left:190px;top:106px">PARQUE DE LA 147</span>
+              <span class="aviso vidrio" style="position:absolute;left:12px;bottom:12px;padding:8px 12px;font-size:13px;background:var(--vidrio);color:var(--color-tinta)">Arrastra el pin si hace falta</span>
+            </div>
+            <div class="tarjeta-viva">
+              <div class="campo"><i class="pt" style="background:var(--estado-resuelto)"></i><span class="k">Dónde</span><span class="v">Parque 147 · canchas</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--color-acento)"></i><span class="k">Cuándo</span><span class="v">Hoy, 4:10 p. m.</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--estado-avistamiento)"></i><span class="k">Qué viste</span><span class="v">Corría hacia la calle 147</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--color-texto-3)"></i><span class="k">Contacto</span><span class="v opcional">Opcional</span></div>
+            </div>
+            <div class="fila" style="margin-top:auto"><button class="mic" type="button" aria-label="Hablar"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn btn-primario" type="button" style="flex:1">Enviar pista</button></div>
+          </div>
+        </div>
+        <div class="vista-titulo"><span class="mono">04</span><b>Reportar avistamiento</b></div>
+      </div>
+
+      <!-- 05 PUBLICADO -->
+      <div class="vista">
+        <div class="telefono">
+          <div class="isla"></div><div class="barra-estado">9:41</div>
+          <div class="pantalla" style="align-items:center;justify-content:center;text-align:center;gap:22px">
+            <svg class="orbita" viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="16" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><g class="gira"><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="12" fill="currentColor"/></g></svg>
+            <h3 class="titular" style="font-size:44px">Reporte publicado</h3>
+            <span class="mono">PF-004 · Luna</span>
+            <p class="meta" style="font-size:17px;line-height:1.45;max-width:290px;margin:0">Ya aparece en el mapa. Te avisaremos cuando alguien reporte una pista.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;width:100%;margin-top:24px">
+              <button class="btn btn-primario" type="button">Ver en el mapa</button>
+              <button class="btn btn-secundario" type="button">Compartir</button>
+            </div>
+          </div>
+        </div>
+        <div class="vista-titulo"><span class="mono">05</span><b>Publicado</b></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== ESCRITORIO ===== -->
+  <section class="bloque">
+    <div class="eyebrow">06 · Vistas · computador</div>
+    <h2 class="doc-h2">Escritorio, estilo tracker</h2>
+    <p class="doc-sub" style="margin:-8px 0 32px">Las cinco pantallas comparten la misma estructura: columna de casos a la izquierda (360 px), mapa al centro y panel contextual a la derecha (380 px). Nuevo reporte y Publicado aparecen como hojas sobre el mapa, sin sacar a la persona del contexto.</p>
+    <div class="pantallas-escritorio">
+
+      <!-- E1 INICIO -->
+      <div class="pantalla-escritorio">
+        <div class="escritorio-marco"><div class="lienzo escritorio" data-ancho="1280" data-alto="800">
+          <div class="col col-izq" data-plantilla="casos"></div>
+          <div class="col col-mapa">
+            <div data-plantilla="mapa"></div>
+            <svg viewBox="0 0 540 800" style="position:absolute;left:0;top:0;width:540px;height:800px" fill="none"><g stroke="var(--estado-avistamiento)" stroke-width="2" stroke-dasharray="6 6" opacity=".6"><path d="M360 285 L150 350"/><path d="M360 285 L430 460"/></g></svg>
+            <span class="pin perdida sel" style="left:360px;top:285px"></span><span class="pin avistamiento" style="left:150px;top:350px"></span><span class="pin avistamiento" style="left:430px;top:460px"></span><span class="pin encontrada" style="left:100px;top:560px"></span><span class="pin perdida" style="left:280px;top:560px"></span><span class="pin perdida" style="left:470px;top:140px"></span>
+            <div class="acciones-mapa vidrio"><button class="mic" type="button" aria-label="Reportar por voz" style="width:48px;height:48px"><svg viewBox="0 0 24 24" fill="none" style="width:22px;height:22px"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn btn-primario" type="button" style="padding:14px 22px">Nuevo reporte</button></div>
+          </div>
+          <div class="col col-der" data-plantilla="panel"></div>
+        </div></div>
+        <div class="vista-titulo"><span class="mono">E1</span><b>Inicio · mapa, casos y actividad en vivo</b></div>
+      </div>
+
+      <!-- E2 NUEVO REPORTE -->
+      <div class="pantalla-escritorio">
+        <div class="escritorio-marco"><div class="lienzo escritorio" data-ancho="1280" data-alto="800">
+          <div class="col col-izq" data-plantilla="casos"></div>
+          <div class="col col-mapa"><div data-plantilla="mapa"></div><span class="pin perdida" style="left:360px;top:285px"></span><span class="pin avistamiento" style="left:150px;top:350px"></span><span class="pin encontrada" style="left:100px;top:560px"></span></div>
+          <div class="col col-der" data-plantilla="panel"></div>
+          <div class="velo">
+            <div class="modal">
+              <div class="col-m">
+                <div class="fila"><div class="segmentado"><span class="on">Hablar</span><span>Escribir</span></div><span class="cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div>
+                <h3 class="titular">Cuéntanos qué pasó</h3>
+                <div class="transcripcion"><span class="mono">Escuchando…</span><p>Se me <b style="color:var(--estado-perdida-texto)">perdió</b> mi <b style="color:var(--estado-encontrada-texto)">perrita</b> <b style="color:var(--color-acento)">Luna</b> esta tarde en <b style="color:var(--estado-resuelto-texto)">Cedritos</b>. Es <b style="color:var(--estado-avistamiento-texto)">blanca</b>, con una <b style="color:var(--estado-avistamiento-texto)">mancha negra en el lomo</b>.</p></div>
+                <div class="pregunta"><svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="18" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="15" fill="currentColor"/></svg>¿A qué número te pueden escribir si alguien ve a Luna?</div>
+                <div class="fila" style="margin-top:auto"><button class="mic escuchando" type="button" aria-label="Escuchando"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><div class="entrada">O escribe aquí lo que pasó…</div></div>
+              </div>
+              <div class="col-m">
+                <div class="tarjeta-viva">
+                  <div class="campo"><i class="pt" style="background:var(--estado-perdida)"></i><span class="k">Reporte</span><span class="v">Mascota perdida</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <div class="campo"><i class="pt" style="background:var(--color-acento)"></i><span class="k">Nombre</span><span class="v">Luna</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <div class="campo"><i class="pt" style="background:var(--estado-encontrada)"></i><span class="k">Especie</span><span class="v">Perro</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <div class="campo"><i class="pt" style="background:var(--estado-avistamiento)"></i><span class="k">Aspecto</span><span class="v">Blanca · mancha negra en el lomo</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <div class="campo nuevo"><i class="pt" style="background:var(--estado-resuelto)"></i><span class="k">Zona</span><span class="v">Cedritos</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <div class="campo"><i class="pt" style="background:var(--estado-perdida)"></i><span class="k">Contacto</span><span class="v falta">Falta</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--estado-perdida)" stroke-width="2" stroke-dasharray="3 3"/></svg></div>
+                </div>
+                <div class="mapa-mini" style="height:150px"><svg viewBox="0 0 360 150" preserveAspectRatio="none"><rect width="360" height="150" fill="var(--mapa-fondo)"/><rect x="190" y="26" width="120" height="80" rx="18" fill="var(--mapa-parque)"/><g stroke="var(--mapa-via)"><path d="M-10 118 L370 94" stroke-width="12"/><path d="M130 -10 L150 160" stroke-width="10"/><path d="M-10 44 L370 32" stroke-width="5"/></g></svg><span class="pin perdida sel" style="left:200px;top:74px"></span><span class="globo vidrio" style="left:12px;bottom:12px">Zona · Cedritos</span></div>
+                <button class="btn btn-primario" type="button">Revisar y publicar</button>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <div class="vista-titulo"><span class="mono">E2</span><b>Nuevo reporte · hoja con voz, texto y tarjeta viva</b></div>
+      </div>
+
+      <!-- E3 DETALLE -->
+      <div class="pantalla-escritorio">
+        <div class="escritorio-marco"><div class="lienzo escritorio dos" data-ancho="1280" data-alto="800">
+          <div class="col col-izq" data-plantilla="casos"></div>
+          <div class="pagina">
+            <div class="migas">Casos activos <span>›</span> <b>Luna</b></div>
+            <div class="col-p">
+              <div class="foto perdida" style="height:400px;border-radius:var(--radio-hoja)"><svg viewBox="0 0 200 200" fill="currentColor" style="width:84px;height:84px;opacity:.35"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div>
+              <div class="datos"><div class="dato"><small>Zona</small><b>Cedritos</b></div><div class="dato"><small>Última vez</small><b>Parque 147</b></div><div class="dato"><small>Pistas</small><b>3</b></div><div class="dato"><small>Publicado</small><b>Hace 2 h</b></div></div>
+              <p style="margin:0;font:400 17px/1.5 var(--fuente-ui);color:var(--color-texto-2)">Se escapó del conjunto esta tarde. Es muy tímida: si la ves, no la persigas; avísanos por aquí y dinos hacia dónde iba.</p>
+            </div>
+            <div class="col-p">
+              <div class="fila" style="justify-content:flex-start"><span class="estado perdida" style="font-size:13px">Perdida</span><span class="mono">PF-001</span></div>
+              <div><h3 class="display" style="font-size:64px">Luna</h3><span class="meta" style="font-size:16px">Perra criolla · blanca · mancha negra en el lomo · collar rojo</span></div>
+              <div class="fila"><button class="btn btn-primario" type="button" style="flex:1">La vi</button><button class="btn btn-secundario" type="button">Compartir</button></div>
+              <span class="nombre" style="margin-top:6px">Pistas de la comunidad</span>
+              <div class="mapa-mini"><svg viewBox="0 0 420 250" preserveAspectRatio="none"><rect width="420" height="250" fill="var(--mapa-fondo)"/><rect x="230" y="40" width="140" height="100" rx="20" fill="var(--mapa-parque)"/><g stroke="var(--mapa-via)" fill="none"><path d="M-10 190 L430 160" stroke-width="16"/><path d="M160 -10 L186 260" stroke-width="14"/><path d="M-10 70 L430 54" stroke-width="6"/><path d="M330 -10 L344 260" stroke-width="6"/></g><g stroke="var(--estado-avistamiento)" stroke-width="2" stroke-dasharray="6 6" opacity=".6" fill="none"><path d="M120 150 L290 88"/><path d="M120 150 L360 200"/></g></svg><span class="pin perdida sel" style="left:120px;top:150px"></span><span class="pin avistamiento" style="left:290px;top:88px"></span><span class="pin avistamiento" style="left:360px;top:200px"></span></div>
+              <div class="pista"><i></i><div><b>Canchas del parque de la 147</b><span>Lorenzi · hace 10 min</span></div></div>
+              <div class="pista"><i></i><div><b>Calle 140 con 11</b><span>Anónimo · hace 1 h</span></div></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="vista-titulo"><span class="mono">E3</span><b>Detalle del caso · página completa</b></div>
+      </div>
+
+      <!-- E4 AVISTAMIENTO -->
+      <div class="pantalla-escritorio">
+        <div class="escritorio-marco"><div class="lienzo escritorio" data-ancho="1280" data-alto="800">
+          <div class="col col-izq" data-plantilla="casos"></div>
+          <div class="col col-mapa">
+            <div data-plantilla="mapa"></div>
+            <span class="pin perdida" style="left:360px;top:285px;opacity:.55"></span>
+            <span class="pin avistamiento sel" style="left:250px;top:420px"></span>
+            <span class="globo vidrio" style="left:180px;top:360px">Arrastra el pin al lugar donde la viste</span>
+          </div>
+          <div class="col col-der">
+            <div class="fila"><button class="btn btn-texto" type="button" style="font-size:15px;font-weight:400">Cancelar</button><span class="estado perdida">Luna · PF-001</span></div>
+            <h3 class="titular" style="font-size:34px">¿Dónde viste a Luna?</h3>
+            <div class="tarjeta-viva">
+              <div class="campo"><i class="pt" style="background:var(--estado-resuelto)"></i><span class="k">Dónde</span><span class="v">Parque 147 · canchas</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--color-acento)"></i><span class="k">Cuándo</span><span class="v">Hoy, 4:10 p. m.</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--estado-avistamiento)"></i><span class="k">Qué viste</span><span class="v">Corría hacia la calle 147</span><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="var(--estado-resuelto)"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="campo"><i class="pt" style="background:var(--color-texto-3)"></i><span class="k">Contacto</span><span class="v opcional">Opcional</span></div>
+            </div>
+            <div class="entrada" style="flex:none">O escribe lo que viste…</div>
+            <div class="fila" style="margin-top:auto"><button class="mic" type="button" aria-label="Hablar"><svg viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn btn-primario" type="button" style="flex:1">Enviar pista</button></div>
+          </div>
+        </div></div>
+        <div class="vista-titulo"><span class="mono">E4</span><b>Reportar avistamiento · el mapa se vuelve selector</b></div>
+      </div>
+
+      <!-- E5 PUBLICADO -->
+      <div class="pantalla-escritorio">
+        <div class="escritorio-marco"><div class="lienzo escritorio" data-ancho="1280" data-alto="800">
+          <div class="col col-izq" data-plantilla="casos"></div>
+          <div class="col col-mapa"><div data-plantilla="mapa"></div><span class="pin perdida sel" style="left:360px;top:285px"></span><span class="pin avistamiento" style="left:150px;top:350px"></span></div>
+          <div class="col col-der" data-plantilla="panel"></div>
+          <div class="velo">
+            <div class="confirmacion">
+              <svg class="orbita" viewBox="0 0 200 200" fill="none" style="width:96px;height:96px"><circle cx="100" cy="100" r="16" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><g class="gira"><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="13" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="12" fill="currentColor"/></g></svg>
+              <h3 class="titular" style="font-size:40px">Reporte publicado</h3>
+              <span class="mono">PF-004 · Luna</span>
+              <p class="meta" style="font-size:16px;line-height:1.45;margin:0;max-width:320px">Ya aparece en el mapa. Te avisaremos cuando alguien reporte una pista.</p>
+              <div class="fila" style="width:100%;margin-top:12px"><button class="btn btn-primario" type="button" style="flex:1">Ver en el mapa</button><button class="btn btn-secundario" type="button">Compartir</button></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="vista-titulo"><span class="mono">E5</span><b>Publicado · confirmación sobre el mapa</b></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== TABLET ===== -->
+  <section class="bloque">
+    <div class="eyebrow">07 · Vista · tablet</div>
+    <h2 class="doc-h2">Tablet, dos columnas</h2>
+    <p class="doc-sub" style="margin:-8px 0 32px">Entre 768 y 1199 px desaparece el panel derecho: el detalle abre como página y el mapa conserva los botones flotantes.</p>
+    <div class="escritorio-marco marco-tablet"><div class="lienzo tablet" data-ancho="1024" data-alto="768">
+      <div class="col col-izq" data-plantilla="casos"></div>
+      <div class="col col-mapa">
+        <div data-plantilla="mapa"></div>
+        <span class="pin perdida sel" style="left:380px;top:275px"></span><span class="pin avistamiento" style="left:170px;top:340px"></span><span class="pin avistamiento" style="left:470px;top:450px"></span><span class="pin encontrada" style="left:120px;top:540px"></span><span class="pin perdida" style="left:300px;top:540px"></span>
+        <div class="acciones-mapa vidrio"><button class="mic" type="button" aria-label="Reportar por voz" style="width:48px;height:48px"><svg viewBox="0 0 24 24" fill="none" style="width:22px;height:22px"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><button class="btn btn-primario" type="button" style="padding:14px 22px">Nuevo reporte</button></div>
+      </div>
+    </div></div>
+  </section>
+
+</div>
+
+<!-- ===== Plantillas compartidas por las vistas de escritorio ===== -->
+<template id="plantilla-casos">
+  <div class="lockup"><svg viewBox="0 0 200 200" fill="none"><circle cx="100" cy="100" r="18" fill="currentColor"/><path d="M61.9 122 A44 44 0 1 1 78 138.1" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><path d="M171.42 74.01 A76 76 0 1 1 125.99 28.58" stroke="currentColor" stroke-width="17" stroke-linecap="round"/><circle cx="153.74" cy="46.26" r="15" fill="currentColor"/></svg>Pet <em>Finder</em></div>
+  <div class="buscador" style="position:static;background:var(--color-superficie-2);box-shadow:none;border:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Buscar mascota o barrio</div>
+  <div class="filtros"><span class="filtro on">Todos</span><span class="filtro">Perdidas</span><span class="filtro">Avistamientos</span><span class="filtro">Encontradas</span></div>
+  <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 20px var(--fuente-ui);letter-spacing:-.03em">Casos activos</span><span class="meta">12</span></div>
+  <div class="caso on"><div class="mini foto perdida"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="t"><span class="nombre">Luna</span><span class="meta">Cedritos · hace 2 h</span></div><span class="estado perdida">Perdida</span></div>
+  <div class="caso"><div class="mini foto avistamiento"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="t"><span class="nombre">Max</span><span class="meta">Usaquén · hace 20 min</span></div><span class="estado avistamiento">Pista</span></div>
+  <div class="caso"><div class="mini foto encontrada"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="t"><span class="nombre">Gata gris</span><span class="meta">Calle 147 · ayer</span></div><span class="estado encontrada">Encontrada</span></div>
+  <div class="caso"><div class="mini foto perdida"><svg viewBox="0 0 200 200" fill="currentColor"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div><div class="t"><span class="nombre">Copito</span><span class="meta">Suba · hace 5 h</span></div><span class="estado perdida">Perdida</span></div>
+</template>
+
+<template id="plantilla-mapa">
+  <svg viewBox="0 0 540 800" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><rect width="540" height="800" fill="var(--mapa-fondo)"/><rect x="300" y="220" width="170" height="130" rx="26" fill="var(--mapa-parque)"/><rect x="40" y="520" width="130" height="90" rx="22" fill="var(--mapa-parque)"/><path d="M0 660 C120 620 230 710 360 676 C440 656 490 636 540 644 V800 H0Z" fill="var(--mapa-agua)"/><g stroke="var(--mapa-via)" fill="none"><path d="M-10 300 L560 250" stroke-width="20"/><path d="M200 -10 L250 810" stroke-width="18"/><path d="M-10 500 C160 460 330 540 560 480" stroke-width="22"/><path d="M-10 150 L560 120" stroke-width="8"/><path d="M80 -10 L110 810" stroke-width="8"/><path d="M410 -10 L440 810" stroke-width="8"/><path d="M-10 390 L560 372" stroke-width="7"/><path d="M-10 590 L560 576" stroke-width="7"/></g></svg>
+  <span class="rotulo" style="left:290px;top:196px">CEDRITOS</span><span class="rotulo" style="left:320px;top:362px">PARQUE DE LA 147</span><span class="rotulo" style="left:40px;top:430px">USAQUÉN</span>
+</template>
+
+<template id="plantilla-panel">
+  <div class="foto perdida" style="height:170px;border-radius:var(--radio-tarjeta)"><svg viewBox="0 0 200 200" fill="currentColor" style="width:48px;height:48px"><circle cx="44" cy="92" r="17"/><circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/><ellipse cx="100" cy="138" rx="44" ry="36"/></svg></div>
+  <div class="fila" style="justify-content:flex-start"><span class="estado perdida">Perdida</span><span class="mono">PF-001</span></div>
+  <div><h3 class="display" style="font-size:44px">Luna</h3><span class="meta">Perra criolla · blanca · mancha negra</span></div>
+  <div class="fila"><button class="btn btn-primario" type="button" style="flex:1;padding:14px">La vi</button><button class="btn btn-secundario" type="button" style="padding:14px 18px">Compartir</button></div>
+  <div style="height:1px;background:var(--color-borde)"></div>
+  <div class="fila"><span class="nombre">Actividad</span><span class="en-vivo">EN VIVO</span></div>
+  <div class="actividad">
+    <div class="evento"><time>16:42</time><i style="background:var(--estado-avistamiento)"></i><div><b>Pista sobre Luna</b><span>Canchas del parque de la 147</span></div></div>
+    <div class="evento"><time>16:30</time><i style="background:var(--estado-perdida)"></i><div><b>Nueva pérdida · Copito</b><span>Suba</span></div></div>
+    <div class="evento"><time>15:58</time><i style="background:var(--estado-encontrada)"></i><div><b>Gata encontrada</b><span>Calle 147</span></div></div>
+    <div class="evento"><time>15:12</time><i style="background:var(--estado-resuelto)"></i><div><b>Toby volvió a casa</b><span>Chía</span></div></div>
+  </div>
+</template>
+
+<script>
+  // Tema: sigue al sistema y se puede alternar
+  const raiz = document.documentElement, boton = document.getElementById('tema');
+  const aplicar = oscuro => { raiz.dataset.tema = oscuro ? 'oscuro' : 'claro'; boton.textContent = oscuro ? 'Ver en modo claro' : 'Ver en modo oscuro'; };
+  aplicar(window.matchMedia('(prefers-color-scheme: dark)').matches);
+  boton.addEventListener('click', () => aplicar(raiz.dataset.tema !== 'oscuro'));
+
+  // Rellena las piezas compartidas (casos, mapa, panel) desde sus plantillas
+  document.querySelectorAll('[data-plantilla]').forEach(destino => {
+    const plantilla = document.getElementById('plantilla-' + destino.dataset.plantilla);
+    const copia = plantilla.content.cloneNode(true);
+    if (destino.dataset.plantilla === 'mapa') destino.replaceWith(copia); else destino.appendChild(copia);
+  });
+
+  // Escala cada lienzo de escritorio o tablet al ancho disponible
+  const escalar = () => document.querySelectorAll('.escritorio-marco').forEach(marco => {
+    const lienzo = marco.querySelector('.lienzo'); if (!lienzo) return;
+    const ancho = +lienzo.dataset.ancho, alto = +lienzo.dataset.alto;
+    const k = Math.min(1, marco.clientWidth / ancho);
+    lienzo.style.width = ancho + 'px'; lienzo.style.height = alto + 'px';
+    lienzo.style.transform = `scale(${k})`; marco.style.height = (alto * k) + 'px';
+  });
+  escalar(); window.addEventListener('resize', escalar);
+</script>
+</body>
+</html>
