@@ -1,0 +1,648 @@
+[
+  {
+    "id": "E1-T1",
+    "title": "Migrar el build a Spring Boot 4.1.1 con wrapper",
+    "epic": "01-nucleo-hexagonal",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `./mvnw -q clean test` runs THE SYSTEM SHALL exit 0 with the 11 Corte 1 tests (5 in ServicioReportesTest, 6 in ServicioAvistamientosTest) passing on Spring Boot 4.1.1.",
+      "WHEN `./mvnw -q -DskipTests package` runs THE SYSTEM SHALL write the executable jar `target/pet-finder.jar`.",
+      "WHEN `sh scripts/humo.sh` starts that jar THE SYSTEM SHALL answer `GET /actuator/health` with 200 and the script SHALL exit 0.",
+      "WHEN `./mvnw -q compile exec:java` runs THE SYSTEM SHALL print the console demo through `PASO 11`, with every piece taken from `ConfiguracionPetFinder` instead of manual wiring in `Main`."
+    ],
+    "verify": [
+      "./mvnw -q clean test",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh",
+      "./mvnw -q compile exec:java | grep -q \"PASO 11\""
+    ],
+    "checkpoint": "step-01-base-spring",
+    "files": [
+      "pom.xml",
+      "src/main/java/petfinder/PetFinderApplication.java",
+      "src/main/java/petfinder/config/ConfiguracionPetFinder.java",
+      "src/main/java/petfinder/Main.java",
+      "src/main/resources/application.properties"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T1",
+    "title": "Escribir el cliente de la API y la captura de voz",
+    "epic": "02-adaptador-web-y-pruebas",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `sh scripts/contiene.sh` reads `static/js/api.js` THE SYSTEM SHALL find the exported async functions `listarReportes`, `consultarReporte`, `crearReporte`, `registrarAvistamiento`, `resolverReporte`, `cerrarReporte`, `enviarVoz` and `turnoAsistente` and the class `ErrorApi`.",
+      "WHEN a response status is 400, 404, 409 or 422 THE SYSTEM SHALL reject with an `ErrorApi` whose `message` is the server's `error` field (static check: `api.js` contains `class ErrorApi` and `.error`).",
+      "WHEN `sh scripts/contiene.sh` reads `static/js/voz.js` THE SYSTEM SHALL find `export function soportaVoz`, `export function iniciarCaptura`, `export function detenerCaptura`, `webkitSpeechRecognition` and `es-CO`.",
+      "WHEN either module is scanned THE SYSTEM SHALL contain no `alert(` call."
+    ],
+    "verify": [
+      "sh scripts/contiene.sh src/main/resources/static/js/api.js 'export async function listarReportes' 'export async function consultarReporte' 'export async function crearReporte' 'export async function registrarAvistamiento' 'export async function resolverReporte' 'export async function cerrarReporte' 'export async function enviarVoz' 'export async function turnoAsistente' 'class ErrorApi' '.error' '!alert('",
+      "sh scripts/contiene.sh src/main/resources/static/js/voz.js 'export function soportaVoz' 'export function iniciarCaptura' 'export function detenerCaptura' 'webkitSpeechRecognition' 'es-CO' '!alert('"
+    ],
+    "checkpoint": "step-02-cliente-js",
+    "files": [
+      "src/main/resources/static/js/api.js",
+      "src/main/resources/static/js/voz.js"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T1",
+    "title": "Fijar el SLO y escribir los guiones de k6",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `perf/README.md` is read THE SYSTEM SHALL state the SLO before any run: p95 of `http_req_duration` ≤ 500 ms (`p(95)<500`), `http_req_failed` < 1 % (`rate<0.01`) and at least 30 req/s sustained.",
+      "WHEN `k6 inspect` parses `perf/scripts/baseline.js` and `perf/scripts/carga.js` THE SYSTEM SHALL exit 0 for both.",
+      "WHEN `perf/scripts/carga.js` is read THE SYSTEM SHALL encode the SLO as thresholds `http_req_duration: ['p(95)<500']` and `http_req_failed: ['rate<0.01']`.",
+      "WHEN a script sends requests THE SYSTEM SHALL tag them `voz_registrar` and `voz_listar` so both latencies can be compared."
+    ],
+    "verify": [
+      "sh scripts/contiene.sh perf/README.md 'p(95)<500' 'rate<0.01' '30 req/s' 'Escenario' 'Captura de voz'",
+      "sh scripts/contiene.sh perf/scripts/carga.js \"http_req_duration: ['p(95)<500']\" \"http_req_failed: ['rate<0.01']\" 'voz_registrar' 'voz_listar'",
+      "sh scripts/contiene.sh perf/scripts/baseline.js 'voz_registrar' 'voz_listar'",
+      "k6 inspect perf/scripts/baseline.js",
+      "k6 inspect perf/scripts/carga.js"
+    ],
+    "checkpoint": "step-03-slo-y-k6",
+    "files": [
+      "perf/README.md",
+      "perf/scripts/baseline.js",
+      "perf/scripts/carga.js",
+      "perf/resultados/.gitkeep"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T2",
+    "title": "Reorganizar en hexagonal con puertos y ArchUnit",
+    "epic": "01-nucleo-hexagonal",
+    "dependencies": [
+      "E1-T1"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `./mvnw -q clean test` runs THE SYSTEM SHALL exit 0 with the 11 Corte 1 tests and the 5 rules of `ReglasArquitecturaTest` passing.",
+      "WHEN ArchUnit analyses `petfinder.domain..` THE SYSTEM SHALL find no dependency on `org.springframework`, `jakarta.persistence`, `com.anthropic`, `petfinder.application`, `petfinder.adaptadores` or `petfinder.config`.",
+      "WHEN `ServicioReportes` and `ServicioAvistamientos` are read THE SYSTEM SHALL declare `implements GestionReportes` and `implements RegistroAvistamientos` from `petfinder.application.port.entrada`.",
+      "WHEN the source tree is listed THE SYSTEM SHALL have no `src/main/java/petfinder/ui`, `src/main/java/petfinder/infrastructure` or `src/main/java/petfinder/domain/repository` directory.",
+      "WHEN `sh scripts/humo.sh` runs after `./mvnw -q -DskipTests package` THE SYSTEM SHALL still answer health 200."
+    ],
+    "verify": [
+      "./mvnw -q clean test",
+      "sh scripts/contiene.sh src/main/java/petfinder/application/service/ServicioReportes.java 'implements GestionReportes'",
+      "sh scripts/contiene.sh src/main/java/petfinder/application/service/ServicioAvistamientos.java 'implements RegistroAvistamientos'",
+      "test ! -e src/main/java/petfinder/ui && test ! -e src/main/java/petfinder/infrastructure && test ! -e src/main/java/petfinder/domain/repository",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh"
+    ],
+    "checkpoint": "step-04-hexagonal",
+    "files": [
+      "src/main/java/petfinder/**",
+      "src/test/java/petfinder/application/**",
+      "src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T2",
+    "title": "Montar tokens, estilos base y el esqueleto de la página",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [],
+    "priority": "p1",
+    "acceptance": [
+      "WHEN `sh scripts/verificar-tokens.sh` runs THE SYSTEM SHALL find every token defined in `docs/diseno/DESIGN.md` §13 inside `static/css/tokens.css` and zero hexadecimal colors in `static/css/app.css`.",
+      "WHEN `static/index.html` is read THE SYSTEM SHALL link `css/tokens.css`, `css/app.css` and `img/marca.svg` and declare `lang=\"es\"` and a viewport meta tag.",
+      "WHEN `static/img/marca.svg` is compared with `docs/diseno/logo/marca.svg` THE SYSTEM SHALL be byte-identical."
+    ],
+    "verify": [
+      "sh scripts/verificar-tokens.sh",
+      "sh scripts/contiene.sh src/main/resources/static/index.html 'css/tokens.css' 'css/app.css' 'img/marca.svg' 'lang=\"es\"' 'name=\"viewport\"'",
+      "cmp -s docs/diseno/logo/marca.svg src/main/resources/static/img/marca.svg"
+    ],
+    "checkpoint": "step-05-sistema-visual",
+    "files": [
+      "src/main/resources/static/css/tokens.css",
+      "src/main/resources/static/css/app.css",
+      "src/main/resources/static/index.html",
+      "src/main/resources/static/img/marca.svg"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T2",
+    "title": "Probar los servicios con dobles de Mockito",
+    "epic": "02-adaptador-web-y-pruebas",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN an avistamiento targets a missing report, a found-pet report or a RESUELTO report THE SYSTEM SHALL throw the domain exception and Mockito SHALL verify `guardar` and `notificar` were never called.",
+      "WHEN a valid avistamiento is registered THE SYSTEM SHALL call `repositorio.guardar` before `publicador.notificar`, verified with `InOrder`.",
+      "WHEN `ServicioReportes` is built with an empty creators map THE SYSTEM SHALL throw `OperacionNoPermitidaException` on `registrar` and never call `guardar`.",
+      "WHEN a lost-pet request without zone is registered THE SYSTEM SHALL throw `DatosInvalidosException` and never call `guardar`; WHEN a report is resolved THE SYSTEM SHALL call `guardar` with that report.",
+      "WHEN `./mvnw -q test -Dtest='ServicioAvistamientosMockTest,ServicioReportesMockTest'` runs THE SYSTEM SHALL exit 0 with every test of both classes passing."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest='ServicioAvistamientosMockTest,ServicioReportesMockTest'",
+      "./mvnw -q clean test"
+    ],
+    "checkpoint": "step-06-pruebas-mockito",
+    "files": [
+      "src/test/java/petfinder/application/service/ServicioAvistamientosMockTest.java",
+      "src/test/java/petfinder/application/service/ServicioReportesMockTest.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T3",
+    "title": "Agregar reconstrucción, IDs atómicos y pruebas de dominio",
+    "epic": "01-nucleo-hexagonal",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `ReportePerdida.reconstruir(...)` receives a date, a RESUELTO state and a list of sightings THE SYSTEM SHALL return a report with that same date, state and sightings.",
+      "WHEN a reconstructed RESUELTO report receives a new sighting THE SYSTEM SHALL throw `OperacionNoPermitidaException`.",
+      "WHEN 8 threads request 1000 identifiers from one `GeneradorIdReportes` THE SYSTEM SHALL return 1000 distinct values, and after the 999th THE SYSTEM SHALL return `PF-1000`.",
+      "WHEN each of the 9 origin→destination state pairs is evaluated THE SYSTEM SHALL allow only ACTIVO→RESUELTO and ACTIVO→CERRADO.",
+      "WHEN a lost-pet request lacks zone, description, contact medium, pet, pet name or species, or a found-pet request has a null, empty or blank animal description THE SYSTEM SHALL throw `DatosInvalidosException`.",
+      "WHEN `./mvnw -q clean test` runs THE SYSTEM SHALL exit 0 with every earlier test still passing."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest='EstadoReporteTest,CreadoresReporteTest,GeneradorIdReportesTest,ReconstruccionReporteTest'",
+      "./mvnw -q clean test"
+    ],
+    "checkpoint": "step-07-dominio-reconstruccion",
+    "files": [
+      "src/main/java/petfinder/domain/model/ReporteMascota.java",
+      "src/main/java/petfinder/domain/model/ReportePerdida.java",
+      "src/main/java/petfinder/domain/model/ReporteEncontrada.java",
+      "src/main/java/petfinder/domain/model/GeneradorIdReportes.java",
+      "src/test/java/petfinder/domain/*.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T4",
+    "title": "Definir coordenadas, borrador y puertos del asistente",
+    "epic": "01-nucleo-hexagonal",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN coordinates are exactly ±90 latitude and ±180 longitude THE SYSTEM SHALL accept them, and WHEN either exceeds its range by 0.0001 THE SYSTEM SHALL throw `DatosInvalidosException`.",
+      "WHEN only one of latitude and longitude is given THE SYSTEM SHALL throw `DatosInvalidosException`.",
+      "WHEN `aproximada()` is applied to 4.723581, -74.041749 THE SYSTEM SHALL return 4.724, -74.042.",
+      "WHEN an empty `BorradorReporte` is asked what is missing THE SYSTEM SHALL answer TIPO, ZONA, DESCRIPCION, CONTACTO in that order.",
+      "WHEN a complete lost-pet draft is converted with `aSolicitud()` THE SYSTEM SHALL produce a request that `CreadorReportePerdida` accepts.",
+      "WHEN `./mvnw -q clean test` runs THE SYSTEM SHALL exit 0, including every test that still uses the Corte 1 constructor `new Ubicacion(zona, referencia)`."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest='UbicacionTest,BorradorReporteTest'",
+      "./mvnw -q clean test"
+    ],
+    "checkpoint": "step-08-contrato-asistente",
+    "files": [
+      "src/main/java/petfinder/domain/model/Ubicacion.java",
+      "src/main/java/petfinder/domain/model/BorradorReporte.java",
+      "src/main/java/petfinder/application/port/entrada/AsistenteReportes.java",
+      "src/main/java/petfinder/application/port/salida/ExtractorDatosReporte.java",
+      "src/test/java/petfinder/domain/borrador/*.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T5",
+    "title": "Construir el intérprete y el servicio de comandos de voz",
+    "epic": "01-nucleo-hexagonal",
+    "dependencies": [
+      "E1-T2"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN the interpreter reads `perdí un perro llamado Max en Chía`, `Perdi una gata llamada Nala en Cedritos` or `PERDÍ UN PERRO LLAMADO MAX EN CHÍA` THE SYSTEM SHALL return REGISTRAR_PERDIDA with especie, nombre and zona.",
+      "WHEN it reads `encontré una gata blanca en Cajicá` THE SYSTEM SHALL return REGISTRAR_ENCONTRADA; `ver reportes`, `listar reportes` and `mostrar reportes` SHALL return LISTAR_ACTIVOS; `consultar reporte PF-001`, `consultar reporte pf 1` and `consultar reporte pf001` SHALL return CONSULTAR with id `PF-001`.",
+      "WHEN the text is null, empty, only spaces, longer than 200 characters, lacks species or zone, or is `cómprame un perro` THE SYSTEM SHALL return NO_RECONOCIDO, and WHEN a valid phrase is exactly 200 characters THE SYSTEM SHALL still recognize it.",
+      "WHEN `ServicioComandosVoz` receives a lost-pet phrase THE SYSTEM SHALL call `GestionReportes.registrar(PERDIDA, …)` with the dictated name, species and zone, verified with `ArgumentCaptor`.",
+      "WHEN it receives an unrecognized phrase THE SYSTEM SHALL never call `registrar`, and for `ver reportes` THE SYSTEM SHALL return exactly what `listarActivos()` returned.",
+      "WHEN the app boots THE SYSTEM SHALL expose `ProcesadorComandosVoz` and `InterpreteComandoVoz` beans, and `sh scripts/humo.sh` SHALL exit 0."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest='InterpreteComandoVozTest,ServicioComandosVozTest'",
+      "./mvnw -q clean test",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh"
+    ],
+    "checkpoint": "step-09-voz-regex",
+    "files": [
+      "src/main/java/petfinder/application/port/entrada/ProcesadorComandosVoz.java",
+      "src/main/java/petfinder/application/service/InterpreteComandoVoz.java",
+      "src/main/java/petfinder/application/service/ServicioComandosVoz.java",
+      "src/main/java/petfinder/config/ConfiguracionPetFinder.java",
+      "src/test/java/petfinder/application/voz/*.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T3",
+    "title": "Implementar el adaptador de persistencia H2",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E1-T3",
+      "E1-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN a lost-pet report with coordinates is saved and read back THE SYSTEM SHALL return the same pet name, contact medium and latitude.",
+      "WHEN a found-pet report is saved and read back THE SYSTEM SHALL keep its `descripcionMascota`.",
+      "WHEN an unknown id is looked up THE SYSTEM SHALL return an empty `Optional`.",
+      "WHEN ACTIVO, RESUELTO and CERRADO reports are saved THE SYSTEM SHALL list only the ACTIVO one as active.",
+      "WHEN a saved report is resolved or receives a sighting and is saved again THE SYSTEM SHALL persist the new state and the sighting, and WHEN it is read back THE SYSTEM SHALL keep its original `fechaCreacion`.",
+      "WHEN `./mvnw -q verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=RepositorioReportesH2IT` runs THE SYSTEM SHALL exit 0 against a real embedded H2."
+    ],
+    "verify": [
+      "./mvnw -q verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=RepositorioReportesH2IT",
+      "./mvnw -q clean test"
+    ],
+    "checkpoint": "step-10-adaptador-h2",
+    "files": [
+      "src/main/java/petfinder/adaptadores/salida/persistencia/h2/ReporteEntity.java",
+      "src/main/java/petfinder/adaptadores/salida/persistencia/h2/AvistamientoEntity.java",
+      "src/main/java/petfinder/adaptadores/salida/persistencia/h2/ReporteJpaRepository.java",
+      "src/main/java/petfinder/adaptadores/salida/persistencia/h2/RepositorioReportesH2.java",
+      "src/test/java/petfinder/integracion/persistencia/RepositorioReportesH2IT.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T3",
+    "title": "Crear los DTO web y el manejador de errores",
+    "epic": "02-adaptador-web-y-pruebas",
+    "dependencies": [
+      "E1-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN a `SolicitudReporteDTO` with `tipo` PERDIDA is converted THE SYSTEM SHALL build `SolicitudReporte.paraPerdida` with a `Mascota`, and with ENCONTRADA THE SYSTEM SHALL build `paraEncontrada` with `descripcionMascota`.",
+      "WHEN `ReporteDTO.resumen(reporte)` maps a report THE SYSTEM SHALL round its coordinates to 3 decimals and mask the contact: `3001234567` → `300•••••67`, `sofia@correo.co` → `so•••@correo.co`.",
+      "WHEN `ReporteDTO.detalle(reporte)` maps the same report THE SYSTEM SHALL keep the full contact and list its sightings without the spotter's contact.",
+      "WHEN `ManejadorErrores` handles `DatosInvalidosException`, `ReporteNoEncontradoException` or `OperacionNoPermitidaException` THE SYSTEM SHALL answer 400, 404 or 409 with the body `{\"error\": \"<mensaje de la excepción>\"}`.",
+      "WHEN `./mvnw -q test -Dtest=MapeoDtoTest` runs THE SYSTEM SHALL exit 0 with every mapping and handler test passing."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest=MapeoDtoTest",
+      "./mvnw -q clean test"
+    ],
+    "checkpoint": "step-11-dtos-y-errores",
+    "files": [
+      "src/main/java/petfinder/adaptadores/entrada/web/dto/SolicitudReporteDTO.java",
+      "src/main/java/petfinder/adaptadores/entrada/web/dto/ReporteDTO.java",
+      "src/main/java/petfinder/adaptadores/entrada/web/dto/AvistamientoDTO.java",
+      "src/main/java/petfinder/adaptadores/entrada/web/ManejadorErrores.java",
+      "src/test/java/petfinder/adaptadores/entrada/web/MapeoDtoTest.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T4",
+    "title": "Implementar el servicio del asistente con respaldo regex",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E1-T4",
+      "E1-T5"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN the first extractor returns data THE SYSTEM SHALL merge it into the draft and report that extractor's `nombre()` as `fuente`.",
+      "WHEN the first extractor throws or returns empty THE SYSTEM SHALL use the next one, and WHEN none answers THE SYSTEM SHALL keep the draft unchanged and report `fuente` `ninguna`.",
+      "WHEN fields are missing THE SYSTEM SHALL return as `pregunta` the question of the first missing field, and WHEN none is missing THE SYSTEM SHALL return `Listo. Revisa la tarjeta y publica.`",
+      "WHEN a turn produces a type but the draft has no description THE SYSTEM SHALL use the turn's text as `descripcion`.",
+      "WHEN `ExtractorRegex` reads `perdí un perro llamado Max en Chía, mi número es 300 123 4567` THE SYSTEM SHALL extract PERDIDA, `Max`, `perro`, `Chía` and `3001234567`.",
+      "WHEN the app boots THE SYSTEM SHALL expose an `AsistenteReportes` bean, and `sh scripts/humo.sh` SHALL exit 0."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest='ServicioAsistenteTest,ExtractorRegexTest'",
+      "./mvnw -q clean test",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh"
+    ],
+    "checkpoint": "step-12-asistente",
+    "files": [
+      "src/main/java/petfinder/application/service/ServicioAsistente.java",
+      "src/main/java/petfinder/application/service/ExtractorRegex.java",
+      "src/main/java/petfinder/config/ConfiguracionAsistente.java",
+      "src/test/java/petfinder/application/asistente/ServicioAsistenteTest.java",
+      "src/test/java/petfinder/application/asistente/ExtractorRegexTest.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T4",
+    "title": "Exponer la API REST de reportes, voz y asistente",
+    "epic": "02-adaptador-web-y-pruebas",
+    "dependencies": [
+      "E2-T3",
+      "E1-T5",
+      "E3-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `POST /api/reportes` receives a valid lost-pet body THE SYSTEM SHALL answer 201 with the `ReporteDTO`, and WHEN the zone is missing THE SYSTEM SHALL answer 400 with `{\"error\": …}`.",
+      "WHEN `GET /api/reportes/{id}` asks for an unknown id THE SYSTEM SHALL answer 404, and WHEN `POST /api/reportes/{id}/resolver` hits an already resolved report THE SYSTEM SHALL answer 409.",
+      "WHEN `POST /api/reportes/{id}/avistamientos` succeeds THE SYSTEM SHALL answer 201 with the updated report.",
+      "WHEN `POST /api/voz` gets a recognized registration THE SYSTEM SHALL answer 201, a list or query 200, and an unrecognized phrase 422 with the help message.",
+      "WHEN `POST /api/asistente/turno` receives `{borrador, texto}` THE SYSTEM SHALL answer 200 with `borrador`, `faltantes`, `pregunta`, `fuente` and `listo`.",
+      "WHEN ArchUnit runs THE SYSTEM SHALL confirm that no class in `adaptadores.entrada.web` depends on `application.service`, and `sh scripts/humo.sh /api/reportes` SHALL exit 0."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest=ControladoresWebTest",
+      "./mvnw -q clean test",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh /api/reportes"
+    ],
+    "checkpoint": "step-13-controladores-rest",
+    "files": [
+      "src/main/java/petfinder/adaptadores/entrada/web/ReporteController.java",
+      "src/main/java/petfinder/adaptadores/entrada/web/AvistamientoController.java",
+      "src/main/java/petfinder/adaptadores/entrada/web/VozController.java",
+      "src/main/java/petfinder/adaptadores/entrada/web/AsistenteController.java",
+      "src/test/java/petfinder/adaptadores/entrada/web/ControladoresWebTest.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T5",
+    "title": "Conectar H2 a la aplicación y cargar datos de ejemplo",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E3-T3",
+      "E1-T5"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN the application context starts THE SYSTEM SHALL inject `RepositorioReportesH2` as the `RepositorioReportes` port.",
+      "WHEN a report is registered and then resolved through `GestionReportes` THE SYSTEM SHALL read it back from H2 with state RESUELTO.",
+      "WHEN the web application starts with default properties THE SYSTEM SHALL list the sample cases Luna, Max, Gata gris and Copito among the active reports.",
+      "WHEN the console demo runs THE SYSTEM SHALL still print `Creado: PF-001` for its first report, because sample data loads only in the web application.",
+      "WHEN `./mvnw -q clean verify` runs THE SYSTEM SHALL exit 0 with unit and integration tests passing and write `target/site/jacoco/index.html`."
+    ],
+    "verify": [
+      "./mvnw -q verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='ServicioReportesH2IT,DatosDeEjemploIT'",
+      "./mvnw -q clean verify",
+      "test -f target/site/jacoco/index.html",
+      "sh scripts/humo.sh",
+      "./mvnw -q compile exec:java | grep -q \"Creado: PF-001\""
+    ],
+    "checkpoint": "step-14-h2-integrado",
+    "files": [
+      "src/main/java/petfinder/config/ConfiguracionPetFinder.java",
+      "src/main/java/petfinder/config/DatosDeEjemplo.java",
+      "src/main/resources/application.properties",
+      "src/test/java/petfinder/integracion/persistencia/ServicioReportesH2IT.java",
+      "src/test/java/petfinder/integracion/persistencia/DatosDeEjemploIT.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T6",
+    "title": "Agregar el extractor con Claude y su tope diario",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E3-T4",
+      "E3-T5"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "WHEN the fake `ClienteModelo` returns `{\"tipo\":\"PERDIDA\",\"nombre\":\"Luna\",\"especie\":\"perro\",\"zona\":\"Cedritos\"}` THE SYSTEM SHALL return a draft with those four values, and `nombre()` SHALL be `claude`.",
+      "WHEN the model returns text that is not valid JSON THE SYSTEM SHALL return `Optional.empty()` so the service falls back to regex.",
+      "WHEN the daily cap is reached THE SYSTEM SHALL return `Optional.empty()` without calling `ClienteModelo`.",
+      "WHEN `ANTHROPIC_API_KEY` is blank THE SYSTEM SHALL return `Optional.empty()` without calling `ClienteModelo`, and the app SHALL still boot with health 200.",
+      "WHEN ArchUnit runs THE SYSTEM SHALL find `com.anthropic` imported only inside `petfinder.adaptadores.salida.ia`.",
+      "WHEN the model id is resolved THE SYSTEM SHALL read `PETFINDER_IA_MODELO` with default `claude-sonnet-5` in `ConfiguracionIa`, and `ClienteModeloAnthropic` SHALL contain no model literal."
+    ],
+    "verify": [
+      "./mvnw -q test -Dtest=ExtractorClaudeTest",
+      "./mvnw -q clean test",
+      "sh scripts/contiene.sh src/main/java/petfinder/config/ConfiguracionIa.java 'PETFINDER_IA_MODELO:claude-sonnet-5' 'PETFINDER_IA_TOPE_DIARIO:200' 'ANTHROPIC_API_KEY:'",
+      "sh scripts/contiene.sh src/main/java/petfinder/adaptadores/salida/ia/ClienteModeloAnthropic.java '!claude-sonnet-5'",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh"
+    ],
+    "checkpoint": "step-15-extractor-claude",
+    "files": [
+      "src/main/java/petfinder/adaptadores/salida/ia/ExtractorClaude.java",
+      "src/main/java/petfinder/adaptadores/salida/ia/ClienteModeloAnthropic.java",
+      "src/main/java/petfinder/config/ConfiguracionIa.java",
+      "pom.xml",
+      "src/test/java/petfinder/adaptadores/ia/ExtractorClaudeTest.java"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T7",
+    "title": "Construir la interfaz: casos, mapa y tarjeta viva",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E3-T2",
+      "E2-T1",
+      "E2-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN `sh scripts/humo.sh` requests `/`, `/css/tokens.css`, `/css/app.css`, the modules `/js/app.js`, `/js/api.js`, `/js/voz.js`, `/js/tarjeta-viva.js`, `/js/mapa.js` and `/img/marca.svg` THE SYSTEM SHALL answer 200 for each.",
+      "WHEN `index.html` is read THE SYSTEM SHALL carry every `data-prueba` hook of the UI contract: lista-casos, mapa, boton-nuevo-reporte, entrada-texto, boton-enviar-texto, boton-microfono, tarjeta-viva, boton-publicar, mensaje, boton-la-vi and boton-enviar-pista.",
+      "WHEN `sh scripts/verificar-tokens.sh` runs THE SYSTEM SHALL still find every token and zero hexadecimal colors in `app.css`.",
+      "WHEN the map loads THE SYSTEM SHALL use Leaflet 1.9.4 from cdnjs with CARTO light and dark tiles and the attribution `© OpenStreetMap © CARTO`."
+    ],
+    "verify": [
+      "sh scripts/verificar-tokens.sh",
+      "sh scripts/contiene.sh src/main/resources/static/index.html 'data-prueba=\"lista-casos\"' 'data-prueba=\"mapa\"' 'data-prueba=\"boton-nuevo-reporte\"' 'data-prueba=\"entrada-texto\"' 'data-prueba=\"boton-enviar-texto\"' 'data-prueba=\"boton-microfono\"' 'data-prueba=\"tarjeta-viva\"' 'data-prueba=\"boton-publicar\"' 'data-prueba=\"mensaje\"' 'data-prueba=\"boton-la-vi\"' 'data-prueba=\"boton-enviar-pista\"' 'leaflet/1.9.4' 'js/app.js'",
+      "sh scripts/contiene.sh src/main/resources/static/js/mapa.js 'basemaps.cartocdn.com' '© OpenStreetMap' '© CARTO'",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh / /css/tokens.css /css/app.css /js/app.js /js/api.js /js/voz.js /js/tarjeta-viva.js /js/mapa.js /img/marca.svg"
+    ],
+    "checkpoint": "step-16-interfaz-app",
+    "files": [
+      "src/main/resources/static/js/app.js",
+      "src/main/resources/static/js/tarjeta-viva.js",
+      "src/main/resources/static/js/mapa.js",
+      "src/main/resources/static/index.html",
+      "src/main/resources/static/css/app.css"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T5",
+    "title": "Escribir las pruebas de sistema y la guía de pruebas",
+    "epic": "02-adaptador-web-y-pruebas",
+    "dependencies": [
+      "E2-T4",
+      "E3-T5"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN a lost pet is created over HTTP THE SYSTEM SHALL answer 201, show ACTIVO, accept a sighting with 201, resolve with 204, show RESUELTO and reject a new sighting with 409, using only the id returned by the POST.",
+      "WHEN a report has no zone THE SYSTEM SHALL answer 400, WHEN `PF-999999` is requested THE SYSTEM SHALL answer 404, and WHEN a report is resolved twice THE SYSTEM SHALL answer 409.",
+      "WHEN `perdí un perro llamado Max en Chía` is sent to `/api/voz` THE SYSTEM SHALL answer 201 and the new id SHALL appear in `GET /api/reportes`.",
+      "WHEN an unintelligible phrase is sent to `/api/voz` THE SYSTEM SHALL answer 422 and the size of `GET /api/reportes` SHALL not change.",
+      "WHEN \"Max, perro, Chía\" is created by form, by `/api/voz` and by an assistant draft published through `POST /api/reportes` THE SYSTEM SHALL return the same tipo, nombre, especie and zona in the three reports.",
+      "WHEN `docs/pruebas.md` and the README section `Cómo ejecutar` are read THE SYSTEM SHALL document the command of every test level (`./mvnw test`, `./mvnw verify`, `k6 run`) for macOS/Git Bash (`./mvnw`) and PowerShell (`mvnw.cmd`), because the assignment requires every test type to run with a command documented in the README."
+    ],
+    "verify": [
+      "./mvnw -q verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT'",
+      "./mvnw -q clean verify",
+      "sh scripts/contiene.sh docs/pruebas.md 'mvnw test' 'mvnw verify' 'Unitarias' 'Integración' 'Sistema' 'Carga' 'jacoco'",
+      "sh scripts/contiene.sh README.md 'Cómo ejecutar' './mvnw spring-boot:run' 'mvnw.cmd' 'JDK 17' './mvnw test' './mvnw verify' 'k6 run'"
+    ],
+    "checkpoint": "step-17-pruebas-sistema",
+    "files": [
+      "src/test/java/petfinder/integracion/sistema/FlujoReportePerdidaSistemaIT.java",
+      "src/test/java/petfinder/integracion/sistema/FlujoVozSistemaIT.java",
+      "docs/pruebas.md",
+      "README.md"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T8",
+    "title": "Convertir en PWA y empaquetar en Docker",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E3-T7"
+    ],
+    "priority": "p1",
+    "acceptance": [
+      "WHEN `/manifest.webmanifest` is served THE SYSTEM SHALL declare the name `Pet Finder`, `standalone` display and the 192, 512 and maskable 512 icons, and each icon SHALL answer 200.",
+      "WHEN `index.html` loads THE SYSTEM SHALL link the manifest and the 180 px `apple-touch-icon` and register `sw.js`.",
+      "WHEN `sw.js` handles a request whose path starts with `/api/` THE SYSTEM SHALL go to the network and never answer it from cache.",
+      "WHEN `sh scripts/humo-docker.sh` builds the image from `Dockerfile` and runs it THE SYSTEM SHALL answer health 200 inside the container.",
+      "WHEN Docker builds THE SYSTEM SHALL exclude `blueprints/`, `target/` and `.env` from the build context."
+    ],
+    "verify": [
+      "sh scripts/contiene.sh src/main/resources/static/manifest.webmanifest '\"name\": \"Pet Finder\"' '\"display\": \"standalone\"' 'img/icono-192.png' 'img/icono-512.png' 'img/icono-512-maskable.png' 'maskable'",
+      "sh scripts/contiene.sh src/main/resources/static/index.html 'manifest.webmanifest' 'apple-touch-icon' 'img/icono-180.png' 'serviceWorker'",
+      "sh scripts/contiene.sh src/main/resources/static/sw.js '/api/'",
+      "sh scripts/contiene.sh .dockerignore 'blueprints/' 'target/' '.env'",
+      "./mvnw -q -DskipTests package",
+      "sh scripts/humo.sh /manifest.webmanifest /sw.js /img/icono-180.png /img/icono-192.png /img/icono-512.png /img/icono-512-maskable.png",
+      "sh scripts/humo-docker.sh"
+    ],
+    "checkpoint": "step-18-pwa-y-docker",
+    "files": [
+      "src/main/resources/static/manifest.webmanifest",
+      "src/main/resources/static/sw.js",
+      "src/main/resources/static/index.html",
+      "Dockerfile",
+      ".dockerignore"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E3-T9",
+    "title": "Correr baseline y carga, y analizar el cuello de botella",
+    "epic": "03-persistencia-asistente-e-interfaz",
+    "dependencies": [
+      "E3-T1",
+      "E3-T5",
+      "E2-T4"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN the baseline (5 VUs, 1 min) and load (50 VUs for 3 min) scripts run against the application THE SYSTEM SHALL write `perf/resultados/baseline.json` and `perf/resultados/carga.json` containing `http_req_duration` percentiles.",
+      "WHEN `perf/README.md` is read THE SYSTEM SHALL report p95, throughput and error rate per test and state whether the SLO is met, with no `__` placeholder left.",
+      "WHEN the bottleneck is analysed THE SYSTEM SHALL compare the `voz_registrar` and `voz_listar` latencies and state what the hexagonal architecture offers (pagination or `JOIN FETCH` only in the H2 adapter) and what it does not (H2 in the same process as the API).",
+      "WHEN concurrency is checked THE SYSTEM SHALL record the result of `SELECT COUNT(*) FROM REPORTES` next to the number of 201 responses k6 counted."
+    ],
+    "verify": [
+      "test -s perf/resultados/baseline.json",
+      "test -s perf/resultados/carga.json",
+      "sh scripts/contiene.sh perf/resultados/carga.json 'http_req_duration' 'p(95)'",
+      "sh scripts/contiene.sh perf/README.md 'Resultados' 'Baseline' 'Carga' 'voz_registrar' 'voz_listar' 'JOIN FETCH' 'SELECT COUNT(*) FROM REPORTES' '!__'"
+    ],
+    "checkpoint": "step-19-carga-k6",
+    "files": [
+      "perf/README.md",
+      "perf/resultados/*.json",
+      "perf/resultados/*.png"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E2-T6",
+    "title": "Automatizar dos flujos de UI con Selenium",
+    "epic": "02-adaptador-web-y-pruebas",
+    "dependencies": [
+      "E3-T7",
+      "E3-T6"
+    ],
+    "priority": "p2",
+    "acceptance": [
+      "WHEN `./mvnw -q -Pui verify` runs with headless Chrome THE SYSTEM SHALL pass the flow that writes a report in `entrada-texto`, completes the contact, publishes with `boton-publicar` and finds the new case in `lista-casos`.",
+      "WHEN it runs the flow that opens a case, presses `boton-la-vi` and sends a sighting with `boton-enviar-pista` THE SYSTEM SHALL show the confirmation in `mensaje`.",
+      "WHEN the tests locate elements THE SYSTEM SHALL use only `data-prueba` selectors inside Page Objects and explicit `WebDriverWait`, and SHALL contain no `Thread.sleep`.",
+      "WHEN `./mvnw -q clean verify` runs without `-Pui` THE SYSTEM SHALL not execute any `*UIT` class, so machines without Chrome still pass.",
+      "WHEN the README section `Cómo ejecutar` is read THE SYSTEM SHALL document `./mvnw -q -Pui verify` as the command of the UI tests and say they need Chrome."
+    ],
+    "verify": [
+      "./mvnw -q -Pui verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=FlujosPrincipalesUIT",
+      "sh scripts/contiene.sh src/test/java/petfinder/ui/PaginaInicio.java 'WebDriverWait' 'data-prueba' '!Thread.sleep'",
+      "sh scripts/contiene.sh src/test/java/petfinder/ui/FlujosPrincipalesUIT.java '!Thread.sleep' '!By.xpath'",
+      "sh scripts/contiene.sh README.md './mvnw -q -Pui verify' 'Chrome'",
+      "./mvnw -q clean verify"
+    ],
+    "checkpoint": "step-20-pruebas-ui",
+    "files": [
+      "pom.xml",
+      "src/test/java/petfinder/ui/PaginaInicio.java",
+      "src/test/java/petfinder/ui/PaginaNuevoReporte.java",
+      "src/test/java/petfinder/ui/FlujosPrincipalesUIT.java",
+      "README.md"
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "E1-T6",
+    "title": "Escribir ADR, diagramas C4, arquitectura y trazabilidad",
+    "epic": "01-nucleo-hexagonal",
+    "dependencies": [
+      "E2-T5",
+      "E3-T8",
+      "E3-T9"
+    ],
+    "priority": "p0",
+    "acceptance": [
+      "WHEN ADR-001 is read THE SYSTEM SHALL compare layers, MVC, hexagonal and microservices against criteria taken from the two challenges and list positive and negative consequences.",
+      "WHEN ADR-002 is read THE SYSTEM SHALL record the Laya test (intent 60 %, confirmation 84 %, p95 812 ms on CPU), why it was rejected and the Claude + regex decision.",
+      "WHEN `docs/diagramas/c4.md` is read THE SYSTEM SHALL contain the Corte 1 diagram and Mermaid `C4Context`, `C4Container` and `C4Component` diagrams.",
+      "WHEN `docs/arquitectura.md` is read THE SYSTEM SHALL contain the 7 numbered sections required by the assignment.",
+      "WHEN the README traceability table is read THE SYSTEM SHALL use the rubric columns (Reto, Atributo de calidad, Decisión arquitectónica, Dónde está, Prueba que lo evidencia, Resultado) with one row per challenge and a numeric result, mark the map with coordinates and the assistant with `Funcionalidad agregada porque el reto la exige` naming the challenge that requires each, and state the known limits, with no `__` left.",
+      "WHEN `./mvnw -q clean verify` runs on the final tree THE SYSTEM SHALL exit 0."
+    ],
+    "verify": [
+      "sh scripts/contiene.sh docs/adr/ADR-001-estilo-arquitectonico.md 'Contexto' 'Opciones consideradas' 'Decisión' 'Consecuencias positivas' 'Consecuencias negativas' 'Hexagonal' 'Capas' 'MVC' 'Microservicios'",
+      "sh scripts/contiene.sh docs/adr/ADR-002-extraccion-de-intencion.md 'Laya' '60 %' '84 %' '812 ms' 'Claude' 'regex'",
+      "sh scripts/contiene.sh docs/diagramas/c4.md 'C4Context' 'C4Container' 'C4Component' 'Corte 1'",
+      "sh scripts/contiene.sh docs/arquitectura.md '## 1.' '## 2.' '## 3.' '## 4.' '## 5.' '## 6.' '## 7.'",
+      "sh scripts/contiene.sh README.md 'Tabla de trazabilidad' 'Atributo de calidad' 'Decisión arquitectónica' 'Prueba que lo evidencia' 'Menú interactivo' 'Captura de voz' 'Funcionalidad agregada porque el reto la exige' 'docs/adr/ADR-001-estilo-arquitectonico.md' 'docs/arquitectura.md' '!__'",
+      "./mvnw -q clean verify"
+    ],
+    "checkpoint": "step-21-documentacion",
+    "files": [
+      "docs/adr/ADR-001-estilo-arquitectonico.md",
+      "docs/adr/ADR-002-extraccion-de-intencion.md",
+      "docs/diagramas/c4.md",
+      "docs/arquitectura.md",
+      "README.md"
+    ],
+    "status": "pending"
+  }
+]
