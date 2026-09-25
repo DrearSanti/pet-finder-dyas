@@ -81,8 +81,8 @@ Todos los colores se consumen como variables CSS. **Nunca se escribe un hexadeci
 | `--color-superficie` | `#FFFFFF` | `#1C1C1E` | Tarjetas, hojas, barras |
 | `--color-superficie-2` | `#F5F5F7` | `#2C2C2E` | Tarjetas dentro de una hoja, campos |
 | `--color-tinta` | `#0B0B0C` | `#F5F5F7` | Texto principal, botón primario |
-| `--color-texto-2` | `#6E6E73` | `#A1A1A6` | Texto secundario |
-| `--color-texto-3` | `#86868B` | `#8E8E93` | Metadatos, etiquetas, marcadores de posición |
+| `--color-texto-2` | `#515156` | `#A1A1A6` | Texto secundario |
+| `--color-texto-3` | `#6E6E73` | `#98989D` | Metadatos, etiquetas, marcadores de posición (4,66:1 sobre Perla, AA) |
 | `--color-borde` | `rgba(0,0,0,.08)` | `rgba(255,255,255,.10)` | Líneas finas y divisores |
 | `--color-acento` | `#0071E3` | `#0A84FF` | Enlaces y selección. **Provisional** |
 | `--color-sobre-tinta` | `#FFFFFF` | `#0B0B0C` | Texto encima del botón primario |
@@ -275,7 +275,7 @@ Vistas de computador (misma estructura en todas: casos a la izquierda, mapa al c
 ```css
 :root {
   --color-fondo:#F5F5F7; --color-superficie:#FFFFFF; --color-superficie-2:#F5F5F7;
-  --color-tinta:#0B0B0C; --color-texto-2:#6E6E73; --color-texto-3:#86868B;
+  --color-tinta:#0B0B0C; --color-texto-2:#515156; --color-texto-3:#6E6E73;
   --color-borde:rgba(0,0,0,.08); --color-acento:#0071E3; --color-sobre-tinta:#FFFFFF;
   --estado-perdida:#FF5F1F; --estado-perdida-texto:#C2410C;
   --estado-avistamiento:#F5A300; --estado-avistamiento-texto:#8A5A00;
@@ -291,7 +291,7 @@ Vistas de computador (misma estructura en todas: casos a la izquierda, mapa al c
 @media (prefers-color-scheme: dark) {
   :root {
     --color-fondo:#0B0B0C; --color-superficie:#1C1C1E; --color-superficie-2:#2C2C2E;
-    --color-tinta:#F5F5F7; --color-texto-2:#A1A1A6; --color-texto-3:#8E8E93;
+    --color-tinta:#F5F5F7; --color-texto-2:#A1A1A6; --color-texto-3:#98989D;
     --color-borde:rgba(255,255,255,.10); --color-acento:#0A84FF; --color-sobre-tinta:#0B0B0C;
     --estado-perdida:#FF7A45; --estado-perdida-texto:#FF9A70;
     --estado-avistamiento:#FFB31A; --estado-avistamiento-texto:#FFC94D;
