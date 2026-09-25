@@ -1,0 +1,9 @@
+# Finales de línea fijos: Mateo trabaja en macOS, Santi y Antonio en Windows.
+* text=auto
+mvnw text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.java text eol=lf
+*.properties text eol=lf
+*.png binary
+*.jar binary

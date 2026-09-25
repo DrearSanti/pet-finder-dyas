@@ -4,3 +4,11 @@ target/
 *.iml
 .vscode/
 .DS_Store
+
+# Variables locales: la clave de Anthropic nunca se commitea
+.env
+.env.*
+!.env.example
+
+# Video de /brag para la presentación: pesa mucho y no es entregable del repo
+brag-output/
