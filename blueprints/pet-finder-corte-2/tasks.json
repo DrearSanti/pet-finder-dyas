@@ -410,7 +410,7 @@
       "src/test/java/petfinder/integracion/persistencia/ServicioReportesH2IT.java",
       "src/test/java/petfinder/integracion/persistencia/DatosDeEjemploIT.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T6",
