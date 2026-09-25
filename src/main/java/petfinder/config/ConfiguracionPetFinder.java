@@ -21,7 +21,8 @@ import petfinder.domain.observer.AlertaPropietarioObserver;
 import petfinder.domain.observer.AuditoriaObserver;
 import petfinder.domain.observer.PublicadorAvistamientos;
 import petfinder.application.port.salida.RepositorioReportes;
-import petfinder.adaptadores.salida.persistencia.memoria.RepositorioReportesEnMemoria;
+import petfinder.adaptadores.salida.persistencia.h2.ReporteJpaRepository;
+import petfinder.adaptadores.salida.persistencia.h2.RepositorioReportesH2;
 
 /**
  * Composition root de Pet Finder: el único lugar donde se nombran las clases
@@ -46,9 +47,13 @@ public class ConfiguracionPetFinder {
         return creadores;
     }
 
+    /**
+     * La aplicación guarda en H2. RepositorioReportesEnMemoria sigue existiendo
+     * para las pruebas unitarias: cambiar de adaptador es cambiar esta línea.
+     */
     @Bean
-    public RepositorioReportes repositorioReportes() {
-        return new RepositorioReportesEnMemoria();
+    public RepositorioReportes repositorioReportes(ReporteJpaRepository jpa) {
+        return new RepositorioReportesH2(jpa);
     }
 
     @Bean
