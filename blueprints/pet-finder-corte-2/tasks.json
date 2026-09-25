@@ -218,7 +218,7 @@
       "src/main/java/petfinder/application/port/salida/ExtractorDatosReporte.java",
       "src/test/java/petfinder/domain/borrador/*.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E1-T5",
