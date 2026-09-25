@@ -6,7 +6,11 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import petfinder.application.port.entrada.GestionReportes;
+import petfinder.application.port.entrada.ProcesadorComandosVoz;
+import petfinder.application.service.InterpreteComandoVoz;
 import petfinder.application.service.ServicioAvistamientos;
+import petfinder.application.service.ServicioComandosVoz;
 import petfinder.application.service.ServicioReportes;
 import petfinder.domain.factory.CreadorReporte;
 import petfinder.domain.factory.CreadorReporteEncontrada;
@@ -76,5 +80,20 @@ public class ConfiguracionPetFinder {
     public ServicioAvistamientos servicioAvistamientos(RepositorioReportes repositorio,
                                                        PublicadorAvistamientos publicador) {
         return new ServicioAvistamientos(repositorio, publicador);
+    }
+
+    @Bean
+    public InterpreteComandoVoz interpreteComandoVoz() {
+        return new InterpreteComandoVoz();
+    }
+
+    /**
+     * Recibe el puerto GestionReportes y no ServicioReportes: la voz queda
+     * atada al caso de uso, no a su implementación.
+     */
+    @Bean
+    public ProcesadorComandosVoz procesadorComandosVoz(InterpreteComandoVoz interprete,
+                                                      GestionReportes gestionReportes) {
+        return new ServicioComandosVoz(interprete, gestionReportes);
     }
 }
