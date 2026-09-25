@@ -1,5 +1,7 @@
 package petfinder.domain.model;
 
+import java.time.LocalDateTime;
+
 /**
  * Caso abierto por alguien que encontró una mascota y la tiene bajo su
  * cuidado.
@@ -22,6 +24,22 @@ public class ReporteEncontrada extends ReporteMascota {
         super(id, ubicacion, descripcion);
         this.descripcionMascota = descripcionMascota;
         this.contactoReportante = contactoReportante;
+    }
+
+    private ReporteEncontrada(String id, Ubicacion ubicacion, String descripcion,
+                              String descripcionMascota, Contacto contactoReportante,
+                              LocalDateTime fechaCreacion, EstadoReporte estado) {
+        super(id, ubicacion, descripcion, fechaCreacion, estado);
+        this.descripcionMascota = descripcionMascota;
+        this.contactoReportante = contactoReportante;
+    }
+
+    /** Devuelve a memoria un hallazgo que ya existía, con su fecha y su estado originales. */
+    public static ReporteEncontrada reconstruir(String id, Ubicacion ubicacion, String descripcion,
+                                                String descripcionMascota, Contacto contactoReportante,
+                                                LocalDateTime fechaCreacion, EstadoReporte estado) {
+        return new ReporteEncontrada(id, ubicacion, descripcion, descripcionMascota,
+                contactoReportante, fechaCreacion, estado);
     }
 
     public String getDescripcionMascota() {

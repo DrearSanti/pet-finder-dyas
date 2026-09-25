@@ -1,5 +1,6 @@
 package petfinder.domain.model;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,30 @@ public class ReportePerdida extends ReporteMascota {
         super(id, ubicacion, descripcion);
         this.mascota = mascota;
         this.contactoPropietario = contactoPropietario;
+    }
+
+    private ReportePerdida(String id, Ubicacion ubicacion, String descripcion, Mascota mascota,
+                           Contacto contactoPropietario, LocalDateTime fechaCreacion,
+                           EstadoReporte estado) {
+        super(id, ubicacion, descripcion, fechaCreacion, estado);
+        this.mascota = mascota;
+        this.contactoPropietario = contactoPropietario;
+    }
+
+    /**
+     * Devuelve a memoria un reporte que ya existía, con su fecha, su estado y
+     * sus avistamientos originales. Los avistamientos se cargan directamente:
+     * un caso RESUELTO conserva las pistas que recibió mientras estaba activo,
+     * aunque ya no admita nuevas.
+     */
+    public static ReportePerdida reconstruir(String id, Ubicacion ubicacion, String descripcion,
+                                             Mascota mascota, Contacto contactoPropietario,
+                                             LocalDateTime fechaCreacion, EstadoReporte estado,
+                                             List<Avistamiento> avistamientos) {
+        ReportePerdida reporte = new ReportePerdida(id, ubicacion, descripcion, mascota,
+                contactoPropietario, fechaCreacion, estado);
+        reporte.avistamientos.addAll(avistamientos);
+        return reporte;
     }
 
     /**
