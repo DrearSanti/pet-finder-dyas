@@ -310,7 +310,7 @@
       "src/main/java/petfinder/adaptadores/entrada/web/ManejadorErrores.java",
       "src/test/java/petfinder/adaptadores/entrada/web/MapeoDtoTest.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T4",
