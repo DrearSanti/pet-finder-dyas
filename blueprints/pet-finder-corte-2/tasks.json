@@ -281,7 +281,7 @@
       "src/main/java/petfinder/adaptadores/salida/persistencia/h2/RepositorioReportesH2.java",
       "src/test/java/petfinder/integracion/persistencia/RepositorioReportesH2IT.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T3",
