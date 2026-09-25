@@ -377,7 +377,7 @@
       "src/main/java/petfinder/adaptadores/entrada/web/AsistenteController.java",
       "src/test/java/petfinder/adaptadores/entrada/web/ControladoresWebTest.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T5",
