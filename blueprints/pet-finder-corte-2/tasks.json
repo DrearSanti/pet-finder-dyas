@@ -445,7 +445,7 @@
       "pom.xml",
       "src/test/java/petfinder/adaptadores/ia/ExtractorClaudeTest.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T7",
