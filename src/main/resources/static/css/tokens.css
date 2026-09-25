@@ -1,0 +1,38 @@
+/* Copia literal de docs/diseno/DESIGN.md §13: si un valor cambia, se cambia allá primero. */
+:root {
+  --color-fondo:#F5F5F7; --color-superficie:#FFFFFF; --color-superficie-2:#F5F5F7;
+  --color-tinta:#0B0B0C; --color-texto-2:#515156; --color-texto-3:#6E6E73;
+  --color-borde:rgba(0,0,0,.08); --color-acento:#0071E3; --color-sobre-tinta:#FFFFFF;
+  --estado-perdida:#FF5F1F; --estado-perdida-texto:#C2410C;
+  --estado-avistamiento:#F5A300; --estado-avistamiento-texto:#8A5A00;
+  --estado-encontrada:#7A5AF8; --estado-encontrada-texto:#5B3FD6;
+  --estado-resuelto:#1DB954; --estado-resuelto-texto:#0F7A36;
+  --fuente-ui:'Geist',system-ui,sans-serif; --fuente-editorial:'Instrument Serif',Georgia,serif;
+  --fuente-mono:'Geist Mono',ui-monospace,monospace;
+  --radio-control:12px; --radio-tarjeta:20px; --radio-foto:18px; --radio-hoja:32px; --radio-pildora:999px;
+  --sombra-suave:0 8px 24px rgba(0,0,0,.06); --sombra-flotante:0 10px 30px rgba(0,0,0,.12);
+  --sombra-hoja:0 -6px 30px rgba(0,0,0,.10);
+  --vidrio:rgba(255,255,255,.82); --curva:cubic-bezier(.2,.8,.2,1); --duracion:240ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo:#0B0B0C; --color-superficie:#1C1C1E; --color-superficie-2:#2C2C2E;
+    --color-tinta:#F5F5F7; --color-texto-2:#A1A1A6; --color-texto-3:#98989D;
+    --color-borde:rgba(255,255,255,.10); --color-acento:#0A84FF; --color-sobre-tinta:#0B0B0C;
+    --estado-perdida:#FF7A45; --estado-perdida-texto:#FF9A70;
+    --estado-avistamiento:#FFB31A; --estado-avistamiento-texto:#FFC94D;
+    --estado-encontrada:#9580FF; --estado-encontrada-texto:#B3A3FF;
+    --estado-resuelto:#30D158; --estado-resuelto-texto:#5EE082;
+    --vidrio:rgba(28,28,30,.72);
+  }
+}
+:root[data-tema="oscuro"] {
+  --color-fondo:#0B0B0C; --color-superficie:#1C1C1E; --color-superficie-2:#2C2C2E;
+  --color-tinta:#F5F5F7; --color-texto-2:#A1A1A6; --color-texto-3:#98989D;
+  --color-borde:rgba(255,255,255,.10); --color-acento:#0A84FF; --color-sobre-tinta:#0B0B0C;
+  --estado-perdida:#FF7A45; --estado-perdida-texto:#FF9A70;
+  --estado-avistamiento:#FFB31A; --estado-avistamiento-texto:#FFC94D;
+  --estado-encontrada:#9580FF; --estado-encontrada-texto:#B3A3FF;
+  --estado-resuelto:#30D158; --estado-resuelto-texto:#5EE082;
+  --vidrio:rgba(28,28,30,.72);
+}
