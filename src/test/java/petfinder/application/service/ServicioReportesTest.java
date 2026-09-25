@@ -1,4 +1,4 @@
-package petfinder.application;
+package petfinder.application.service;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -27,7 +27,7 @@ import petfinder.domain.model.ReportePerdida;
 import petfinder.domain.model.SolicitudReporte;
 import petfinder.domain.model.TipoReporte;
 import petfinder.domain.model.Ubicacion;
-import petfinder.infrastructure.persistence.RepositorioReportesEnMemoria;
+import petfinder.adaptadores.salida.persistencia.memoria.RepositorioReportesEnMemoria;
 
 /**
  * Pruebas del ciclo de vida de un reporte: creación polimórfica, consulta de

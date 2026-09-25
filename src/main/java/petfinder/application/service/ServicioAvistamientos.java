@@ -1,4 +1,6 @@
-package petfinder.application;
+package petfinder.application.service;
+
+import petfinder.application.port.entrada.RegistroAvistamientos;
 
 import java.time.LocalDateTime;
 
@@ -9,7 +11,7 @@ import petfinder.domain.model.ReporteMascota;
 import petfinder.domain.model.ReportePerdida;
 import petfinder.domain.observer.EventoAvistamiento;
 import petfinder.domain.observer.PublicadorAvistamientos;
-import petfinder.domain.repository.RepositorioReportes;
+import petfinder.application.port.salida.RepositorioReportes;
 
 /**
  * Caso de uso de registrar un avistamiento sobre un reporte de pérdida activo.
@@ -19,7 +21,7 @@ import petfinder.domain.repository.RepositorioReportes;
  * del evento, no el ciclo de vida del reporte. Esa separación es parte de la
  * evidencia de SRP documentada en el README.
  */
-public class ServicioAvistamientos {
+public class ServicioAvistamientos implements RegistroAvistamientos {
 
     private final RepositorioReportes repositorio;
     private final PublicadorAvistamientos publicador;

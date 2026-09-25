@@ -1,4 +1,6 @@
-package petfinder.application;
+package petfinder.application.service;
+
+import petfinder.application.port.entrada.GestionReportes;
 
 import java.util.List;
 import java.util.Map;
@@ -9,7 +11,7 @@ import petfinder.domain.factory.CreadorReporte;
 import petfinder.domain.model.ReporteMascota;
 import petfinder.domain.model.SolicitudReporte;
 import petfinder.domain.model.TipoReporte;
-import petfinder.domain.repository.RepositorioReportes;
+import petfinder.application.port.salida.RepositorioReportes;
 
 /**
  * Casos de uso relacionados con el ciclo de vida de un reporte: registrarlo,
@@ -20,7 +22,7 @@ import petfinder.domain.repository.RepositorioReportes;
  * responsabilidad es coordinar ese flujo y traducir los fallos en excepciones
  * de dominio, que es la evidencia de SRP en esta capa.
  */
-public class ServicioReportes {
+public class ServicioReportes implements GestionReportes {
 
     private final RepositorioReportes repositorio;
     private final Map<TipoReporte, CreadorReporte> creadores;

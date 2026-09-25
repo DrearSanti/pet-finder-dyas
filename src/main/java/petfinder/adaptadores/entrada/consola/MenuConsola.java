@@ -1,11 +1,11 @@
-package petfinder.ui;
+package petfinder.adaptadores.entrada.consola;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
 
-import petfinder.application.ServicioAvistamientos;
-import petfinder.application.ServicioReportes;
+import petfinder.application.service.ServicioAvistamientos;
+import petfinder.application.service.ServicioReportes;
 import petfinder.domain.exception.DominioException;
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;

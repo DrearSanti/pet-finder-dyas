@@ -6,8 +6,8 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import petfinder.application.ServicioAvistamientos;
-import petfinder.application.ServicioReportes;
+import petfinder.application.service.ServicioAvistamientos;
+import petfinder.application.service.ServicioReportes;
 import petfinder.domain.factory.CreadorReporte;
 import petfinder.domain.factory.CreadorReporteEncontrada;
 import petfinder.domain.factory.CreadorReportePerdida;
@@ -16,8 +16,8 @@ import petfinder.domain.model.TipoReporte;
 import petfinder.domain.observer.AlertaPropietarioObserver;
 import petfinder.domain.observer.AuditoriaObserver;
 import petfinder.domain.observer.PublicadorAvistamientos;
-import petfinder.domain.repository.RepositorioReportes;
-import petfinder.infrastructure.persistence.RepositorioReportesEnMemoria;
+import petfinder.application.port.salida.RepositorioReportes;
+import petfinder.adaptadores.salida.persistencia.memoria.RepositorioReportesEnMemoria;
 
 /**
  * Composition root de Pet Finder: el único lugar donde se nombran las clases
