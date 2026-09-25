@@ -4,13 +4,13 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import petfinder.application.ServicioAvistamientos;
-import petfinder.application.ServicioReportes;
+import petfinder.application.service.ServicioAvistamientos;
+import petfinder.application.service.ServicioReportes;
 import petfinder.domain.observer.AlertaPropietarioObserver;
 import petfinder.domain.observer.AuditoriaObserver;
 import petfinder.domain.observer.PublicadorAvistamientos;
-import petfinder.ui.EscenarioDemostracion;
-import petfinder.ui.MenuConsola;
+import petfinder.adaptadores.entrada.consola.EscenarioDemostracion;
+import petfinder.adaptadores.entrada.consola.MenuConsola;
 
 /**
  * Entrada de consola del Corte 1, conservada como un adaptador más.

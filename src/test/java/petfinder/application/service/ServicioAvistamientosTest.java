@@ -1,4 +1,4 @@
-package petfinder.application;
+package petfinder.application.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import petfinder.domain.model.Ubicacion;
 import petfinder.domain.observer.EventoAvistamiento;
 import petfinder.domain.observer.ObservadorAvistamiento;
 import petfinder.domain.observer.PublicadorAvistamientos;
-import petfinder.infrastructure.persistence.RepositorioReportesEnMemoria;
+import petfinder.adaptadores.salida.persistencia.memoria.RepositorioReportesEnMemoria;
 
 /**
  * Pruebas del registro de avistamientos y del patrón Observer.

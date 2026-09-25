@@ -1,4 +1,4 @@
-package petfinder.domain.repository;
+package petfinder.application.port.salida;
 
 import java.util.List;
 import java.util.Optional;

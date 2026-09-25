@@ -107,7 +107,7 @@
       "src/test/java/petfinder/application/**",
       "src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E3-T2",
