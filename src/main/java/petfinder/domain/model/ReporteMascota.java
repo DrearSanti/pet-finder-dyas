@@ -25,11 +25,22 @@ public abstract class ReporteMascota {
     private EstadoReporte estado;
 
     protected ReporteMascota(String id, Ubicacion ubicacion, String descripcion) {
+        this(id, ubicacion, descripcion, LocalDateTime.now(), EstadoReporte.ACTIVO);
+    }
+
+    /**
+     * Constructor de reconstrucción: lo usan los métodos reconstruir() de las
+     * subclases cuando un adaptador de persistencia devuelve un reporte que ya
+     * existía. Conserva la fecha y el estado originales en lugar de pisarlos
+     * con "ahora" y ACTIVO.
+     */
+    protected ReporteMascota(String id, Ubicacion ubicacion, String descripcion,
+                             LocalDateTime fechaCreacion, EstadoReporte estado) {
         this.id = id;
         this.ubicacion = ubicacion;
         this.descripcion = descripcion;
-        this.fechaCreacion = LocalDateTime.now();
-        this.estado = EstadoReporte.ACTIVO;
+        this.fechaCreacion = fechaCreacion;
+        this.estado = estado;
     }
 
     public void resolver() {

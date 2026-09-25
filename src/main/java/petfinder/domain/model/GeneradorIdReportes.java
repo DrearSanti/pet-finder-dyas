@@ -1,5 +1,7 @@
 package petfinder.domain.model;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Entrega identificadores consecutivos con el formato PF-001.
  *
@@ -15,10 +17,14 @@ package petfinder.domain.model;
  */
 public class GeneradorIdReportes {
 
-    private int secuencia = 0;
+    /**
+     * AtomicInteger y no int: con la API, dos peticiones simultáneas podían
+     * leer el mismo valor con secuencia++ y recibir el mismo PF-00X, y la
+     * segunda sobrescribía a la primera en el repositorio.
+     */
+    private final AtomicInteger secuencia = new AtomicInteger();
 
     public String siguiente() {
-        secuencia++;
-        return String.format("PF-%03d", secuencia);
+        return String.format("PF-%03d", secuencia.incrementAndGet());
     }
 }
