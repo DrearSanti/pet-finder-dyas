@@ -1,0 +1,13 @@
+# Lo que no debe entrar al contexto de construcción: pesa, no sirve para correr la app o es secreto.
+blueprints/
+target/
+.git/
+.env
+.env.*
+.idea/
+.vscode/
+brag-output/
+docs/evidencias/
+perf/resultados/
+# La clave de CARTO de cada quien: a la imagen entra solo por --build-arg, nunca desde tu carpeta
+src/main/resources/static/js/config-local.js
