@@ -12,3 +12,6 @@ target/
 
 # Video de /brag para la presentación: pesa mucho y no es entregable del repo
 brag-output/
+
+# Clave de CARTO para las teselas del mapa: es de cada quien, no del repo
+src/main/resources/static/js/config-local.js
