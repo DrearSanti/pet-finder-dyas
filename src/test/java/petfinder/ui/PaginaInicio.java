@@ -3,8 +3,8 @@ package petfinder.ui;
 import java.time.Duration;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -30,6 +30,8 @@ public class PaginaInicio {
     public PaginaInicio(WebDriver navegador) {
         this.navegador = navegador;
         this.espera = new WebDriverWait(navegador, ESPERA);
+        // La lista se repinta tras cada publicación: una tarjeta leída puede dejar de existir.
+        this.espera.ignoring(StaleElementReferenceException.class);
     }
 
     static By porPrueba(String nombre) {
@@ -55,16 +57,18 @@ public class PaginaInicio {
     /**
      * Espera a que la lista muestre un caso cuyo texto contenga el valor dado y
      * devuelve su id. La lista se repinta tras cada publicación, así que la
-     * condición se vuelve a evaluar hasta que aparece.
+     * condición se vuelve a evaluar hasta que aparece. El id se lee dentro de
+     * la misma espera: si se leyera después, un repintado entre la búsqueda y
+     * la lectura dejaría la tarjeta obsoleta sin nadie que reintente.
      */
     public String esperarCasoQueDiga(String texto) {
-        WebElement tarjeta = espera.until(navegador -> navegador
+        return espera.until(navegador -> navegador
                 .findElements(By.cssSelector("[data-prueba='lista-casos'] [data-prueba='tarjeta-caso']"))
                 .stream()
                 .filter(elemento -> elemento.getText().contains(texto))
+                .map(elemento -> elemento.getDomAttribute("data-id"))
                 .findFirst()
                 .orElse(null));
-        return tarjeta.getDomAttribute("data-id");
     }
 
     /** Abre el detalle de un caso tocando su tarjeta en la lista. */

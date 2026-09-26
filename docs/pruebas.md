@@ -37,13 +37,14 @@ Ninguna prueba necesita internet ni una clave de Anthropic: toda `@SpringBootTes
 
 ## Resultados
 
-Corrida completa del 26 de septiembre de 2026 (`./mvnw clean verify`, Windows 11, JDK 21):
+Corrida completa del 26 de septiembre de 2026 (`./mvnw clean -Pui verify`, Windows 11, JDK 21, Chrome sin ventana):
 
 | Nivel | Pruebas | Pasan |
 |---|---|---|
-| Unitarias + ArchUnit + slice web | 196 | 196 |
+| Unitarias + ArchUnit + slice web | 205 | 205 |
 | Integración (H2) | 11 | 11 |
 | Sistema (HTTP) | 10 | 10 |
+| UI (Selenium) | 2 | 2 |
 | **Cobertura (jacoco)** | 79 % de instrucciones, 80 % de ramas | |
 
 ## Matriz de casos
