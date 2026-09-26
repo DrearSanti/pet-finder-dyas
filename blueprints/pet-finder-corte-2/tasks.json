@@ -574,7 +574,7 @@
       "perf/resultados/*.json",
       "perf/resultados/*.png"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E2-T6",
