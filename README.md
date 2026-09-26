@@ -533,6 +533,8 @@ Si el reporte no existe, no es de tipo pérdida o ya no está activo, `obtenerPe
 
 Ruta base del código: `src/main/java/petfinder/`
 
+Los enlaces apuntan a la ubicación actual de cada clase: en el Corte 2 los paquetes se reorganizaron en arquitectura hexagonal con `git mv` (tarea E1-T2), así que cada archivo conserva su historia. El diagrama sigue siendo el del Corte 1.
+
 | Clase en el diagrama | Archivo en el repositorio | Coincide |
 |---|---|---|
 | `ReporteMascota` | [`domain/model/ReporteMascota.java`](src/main/java/petfinder/domain/model/ReporteMascota.java) | Sí |
@@ -549,8 +551,8 @@ Ruta base del código: `src/main/java/petfinder/`
 | `CreadorReporte` | [`domain/factory/CreadorReporte.java`](src/main/java/petfinder/domain/factory/CreadorReporte.java) | Sí |
 | `CreadorReportePerdida` | [`domain/factory/CreadorReportePerdida.java`](src/main/java/petfinder/domain/factory/CreadorReportePerdida.java) | Sí |
 | `CreadorReporteEncontrada` | [`domain/factory/CreadorReporteEncontrada.java`](src/main/java/petfinder/domain/factory/CreadorReporteEncontrada.java) | Sí |
-| `RepositorioReportes` | [`domain/repository/RepositorioReportes.java`](src/main/java/petfinder/domain/repository/RepositorioReportes.java) | Sí |
-| `RepositorioReportesEnMemoria` | [`infrastructure/persistence/RepositorioReportesEnMemoria.java`](src/main/java/petfinder/infrastructure/persistence/RepositorioReportesEnMemoria.java) | Sí |
+| `RepositorioReportes` | [`application/port/salida/RepositorioReportes.java`](src/main/java/petfinder/application/port/salida/RepositorioReportes.java) | Sí |
+| `RepositorioReportesEnMemoria` | [`adaptadores/salida/persistencia/memoria/RepositorioReportesEnMemoria.java`](src/main/java/petfinder/adaptadores/salida/persistencia/memoria/RepositorioReportesEnMemoria.java) | Sí |
 | `PublicadorAvistamientos` | [`domain/observer/PublicadorAvistamientos.java`](src/main/java/petfinder/domain/observer/PublicadorAvistamientos.java) | Sí |
 | `ObservadorAvistamiento` | [`domain/observer/ObservadorAvistamiento.java`](src/main/java/petfinder/domain/observer/ObservadorAvistamiento.java) | Sí |
 | `AlertaPropietarioObserver` | [`domain/observer/AlertaPropietarioObserver.java`](src/main/java/petfinder/domain/observer/AlertaPropietarioObserver.java) | Sí |
@@ -560,10 +562,10 @@ Ruta base del código: `src/main/java/petfinder/`
 | `DatosInvalidosException` | [`domain/exception/DatosInvalidosException.java`](src/main/java/petfinder/domain/exception/DatosInvalidosException.java) | Sí |
 | `ReporteNoEncontradoException` | [`domain/exception/ReporteNoEncontradoException.java`](src/main/java/petfinder/domain/exception/ReporteNoEncontradoException.java) | Sí |
 | `OperacionNoPermitidaException` | [`domain/exception/OperacionNoPermitidaException.java`](src/main/java/petfinder/domain/exception/OperacionNoPermitidaException.java) | Sí |
-| `ServicioReportes` | [`application/ServicioReportes.java`](src/main/java/petfinder/application/ServicioReportes.java) | Sí |
-| `ServicioAvistamientos` | [`application/ServicioAvistamientos.java`](src/main/java/petfinder/application/ServicioAvistamientos.java) | Sí |
-| `EscenarioDemostracion` | [`ui/EscenarioDemostracion.java`](src/main/java/petfinder/ui/EscenarioDemostracion.java) | Sí |
-| `MenuConsola` | [`ui/MenuConsola.java`](src/main/java/petfinder/ui/MenuConsola.java) | Sí |
+| `ServicioReportes` | [`application/service/ServicioReportes.java`](src/main/java/petfinder/application/service/ServicioReportes.java) | Sí |
+| `ServicioAvistamientos` | [`application/service/ServicioAvistamientos.java`](src/main/java/petfinder/application/service/ServicioAvistamientos.java) | Sí |
+| `EscenarioDemostracion` | [`adaptadores/entrada/consola/EscenarioDemostracion.java`](src/main/java/petfinder/adaptadores/entrada/consola/EscenarioDemostracion.java) | Sí |
+| `MenuConsola` | [`adaptadores/entrada/consola/MenuConsola.java`](src/main/java/petfinder/adaptadores/entrada/consola/MenuConsola.java) | Sí |
 | `Main` | [`Main.java`](src/main/java/petfinder/Main.java) | Sí |
 
 ---
@@ -571,6 +573,8 @@ Ruta base del código: `src/main/java/petfinder/`
 ## 5. Implementación
 
 ### Estructura de paquetes
+
+> Así quedó el código al cerrar el Corte 1. En el Corte 2, `ui/` pasó a `adaptadores/entrada/consola/`, `infrastructure/persistence/` a `adaptadores/salida/persistencia/memoria/`, `domain/repository/` a `application/port/salida/` y los servicios a `application/service/`. La estructura actual está en [`docs/diagramas/c4.md`](docs/diagramas/c4.md).
 
 ```
 src/main/java/petfinder/
@@ -599,9 +603,9 @@ La separación no es decorativa: cada paquete tiene una razón de cambio distint
 |---|---|
 | Factory Method | [`domain/factory/`](src/main/java/petfinder/domain/factory/) |
 | Observer | [`domain/observer/`](src/main/java/petfinder/domain/observer/) |
-| SRP | Comparar `ServicioReportes` y `ServicioAvistamientos` en [`application/`](src/main/java/petfinder/application/) |
+| SRP | Comparar `ServicioReportes` y `ServicioAvistamientos` en [`application/service/`](src/main/java/petfinder/application/service/) |
 | OCP | El mapa de creadores y las suscripciones en [`Main.java`](src/main/java/petfinder/Main.java) |
-| DIP | [`domain/repository/RepositorioReportes.java`](src/main/java/petfinder/domain/repository/RepositorioReportes.java) frente a su implementación en `infrastructure` |
+| DIP | [`application/port/salida/RepositorioReportes.java`](src/main/java/petfinder/application/port/salida/RepositorioReportes.java) frente a su implementación en `adaptadores/salida/persistencia/` |
 | Reglas de estado | [`domain/model/EstadoReporte.java`](src/main/java/petfinder/domain/model/EstadoReporte.java) |
 
 ### Ejecución
@@ -662,7 +666,7 @@ El historial de commits del repositorio muestra la contribución de cada integra
 
 ## 8. Corte 2: cómo nos organizamos para construirlo
 
-> En construcción. Esta sección explica cómo trabaja el equipo; la documentación técnica del Corte 2 (ADR, diagramas C4, pruebas y trazabilidad) se agrega al cerrar el corte.
+> Esta sección explica cómo trabajó el equipo. La documentación técnica del Corte 2 (ADR, diagramas C4, pruebas y trazabilidad) está en la [sección 9](#9-corte-2-arquitectura-trazabilidad-y-resultados).
 
 El Corte 2 convierte el módulo de consola en una aplicación web con arquitectura hexagonal, captura de voz, asistente con tarjeta viva, mapa y PWA. Para que los tres trabajemos en paralelo sin pisarnos, todo el trabajo está descrito en un **plan de construcción** (blueprint) dentro de [`blueprints/pet-finder-corte-2/`](blueprints/pet-finder-corte-2/). El plan no es código: dice qué se construye, en qué orden, quién lo hace y cómo se comprueba que quedó bien.
 
@@ -703,3 +707,44 @@ Las tareas dependen unas de otras entre épicas, así que el orden importa: la b
 Cada tarea queda así con un commit y una etiqueta propios, de modo que el historial de Git muestra quién hizo qué y permite volver a cualquier paso.
 
 La explicación completa (puesta a punto en macOS y Windows, cómo leer `tasks.json` y el día a día) está en la [wiki del proyecto](https://github.com/DrearSanti/pet-finder-dyas/wiki).
+
+---
+
+## 9. Corte 2: arquitectura, trazabilidad y resultados
+
+El Corte 2 atiende dos retos, **menú interactivo** y **captura de voz**, sin cambiar las reglas del Corte 1: reorganiza el núcleo en arquitectura hexagonal y le agrega entradas (API REST, página web instalable con mapa, voz, asistente) y salidas (H2, Claude) intercambiables.
+
+| Documento | Qué contiene |
+|---|---|
+| [`docs/arquitectura.md`](docs/arquitectura.md) | El documento de arquitectura con las 7 secciones del enunciado |
+| [`docs/adr/ADR-001-estilo-arquitectonico.md`](docs/adr/ADR-001-estilo-arquitectonico.md) | Por qué hexagonal: Capas, MVC, Hexagonal y Microservicios contra criterios de los retos |
+| [`docs/adr/ADR-002-extraccion-de-intencion.md`](docs/adr/ADR-002-extraccion-de-intencion.md) | Por qué Claude con respaldo regex y no Laya |
+| [`docs/diagramas/c4.md`](docs/diagramas/c4.md) | Arquitectura del Corte 1 frente a los C4 del Corte 2 |
+| [`docs/pruebas.md`](docs/pruebas.md) | Estrategia por nivel, matriz de casos y hallazgos |
+| [`perf/README.md`](perf/README.md) | SLO, escenario, resultados de carga y cuello de botella |
+
+### Tabla de trazabilidad del Corte 2
+
+Números de `./mvnw clean verify` del 2026-09-26 sobre `main` (Surefire, Failsafe y JaCoCo) y de las corridas de k6 en `perf/resultados/`.
+
+| Reto | Atributo de calidad | Decisión arquitectónica | Dónde está | Prueba que lo evidencia | Resultado |
+|---|---|---|---|---|---|
+| Menú interactivo | Usabilidad y modificabilidad | La web es un adaptador de entrada más: los controladores solo conocen puertos de entrada | `adaptadores/entrada/web/` (`ReporteController`, `AvistamientoController`), `static/index.html`, `static/js/app.js` | `ControladoresWebTest`, `FlujoReportePerdidaSistemaIT` | 16 de 16 y 6 de 6 en verde. Ciclo completo por HTTP: 201 → ACTIVO → 201 → 204 → RESUELTO → 409; errores 400, 404 y 409 con `{"error": …}` |
+| Menú interactivo: **mapa con coordenadas**. *Funcionalidad agregada porque el reto la exige*: el menú interactivo pide ver los casos cercanos, y eso necesita ubicarlos | Usabilidad y privacidad | `Ubicacion` gana latitud y longitud opcionales y juntas; la lista pública las redondea con `aproximada()` | `domain/model/Ubicacion.java`, `static/js/mapa.js` | `UbicacionTest`, `FlujoReportePerdidaSistemaIT.listaEnmascaraYDetalleNo` | 10 de 10 en verde; la lista publica coordenadas a 3 decimales (unos 100 m) y el contacto enmascarado (`300•••••67`) |
+| Captura de voz | Rendimiento | El servidor solo recibe texto; `InterpreteComandoVoz` usa reglas (regex) y no un modelo, para responder en microsegundos | `adaptadores/entrada/web/VozController.java`, `application/service/InterpreteComandoVoz.java`, `ServicioComandosVoz.java` | k6 `perf/scripts/carga.js` (50 usuarios, 4 min 30 s) | **Cumple el SLO**: p95 de 89,2 ms (objetivo ≤ 500 ms), 0 % de errores en 21.442 peticiones (objetivo < 1 %), 79,2 req/s (objetivo ≥ 30) |
+| Captura de voz | Modificabilidad | La voz publica por `GestionReportes`, el mismo puerto que el formulario y la consola | `application/port/entrada/ProcesadorComandosVoz.java`, `config/ConfiguracionPetFinder.java` | `FlujoVozSistemaIT`, `InterpreteComandoVozTest`, `ServicioComandosVozTest` | 4 de 4, 26 de 26 y 5 de 5 en verde. "Max, perro, Chía" por formulario, voz y asistente produce el mismo reporte. **Resuelto con un límite:** la transcripción depende de Web Speech, así que la voz solo funciona en Chrome y Edge y con internet; en otros navegadores la misma frase se escribe en el campo de texto. Faltaría transcribir en el servidor, que se descartó para no procesar audio (sección 7) |
+| Captura de voz: **asistente con tarjeta viva**. *Funcionalidad agregada porque el reto la exige*: la captura de voz necesita completar por turnos lo que una sola frase no dice | Disponibilidad y seguridad | Puerto `ExtractorDatosReporte` con dos adaptadores (Claude primero, regex de respaldo); el asistente no recibe `GestionReportes`, así que nunca publica | `application/service/ServicioAsistente.java`, `adaptadores/salida/ia/ExtractorClaude.java`, `application/service/ExtractorRegex.java`, `static/js/tarjeta-viva.js` | `ServicioAsistenteTest`, `ExtractorRegexTest`, `ExtractorClaudeTest` | 15 de 15, 26 de 26 y 31 de 31 en verde, sin llamar a Claude. `git diff step-14-h2-integrado step-15-extractor-claude --stat -- src/main/java/petfinder/domain` sale vacío |
+| Los dos retos | Modificabilidad y testabilidad | Arquitectura hexagonal verificada con ArchUnit ([ADR-001](docs/adr/ADR-001-estilo-arquitectonico.md)) | `test/.../arquitectura/ReglasArquitecturaTest.java` | `ReglasArquitecturaTest` y JaCoCo | 5 de 5 reglas en verde. Cobertura total: 79,6 % de instrucciones y 80,4 % de ramas; paquete `domain`: 96,8 % y 86,5 % |
+
+**En total:** 217 pruebas automatizadas en verde (196 unitarias, de arquitectura y de capa web; 11 de integración con H2; 10 de sistema por HTTP).
+
+### Límites conocidos
+
+- **La voz solo funciona en Chrome y Edge, y con internet** (Web Speech). En otros navegadores el campo de texto hace lo mismo.
+- **H2 en memoria:** los datos se pierden al reiniciar y la API no puede correr en varias instancias.
+- **Sin paginación y con consultas N+1** en la lista de casos: es el cuello de botella que midió la carga.
+- **Sin cuentas ni permisos:** cualquiera puede resolver o cerrar un caso.
+- **Pruebas de interfaz con Selenium pendientes** (tarea E2-T6) al cerrar esta sección. Son opcionales en el enunciado, con bonificación.
+- **Una sola corrida de carga**, con k6 y la app en la misma máquina.
+
+El detalle de cada límite y el trabajo pendiente para el Corte 3 están en la [sección 7 de `docs/arquitectura.md`](docs/arquitectura.md#7-límites-conocidos-del-diseño-y-trabajo-pendiente-para-el-tercer-corte).
