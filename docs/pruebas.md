@@ -11,7 +11,7 @@ Esta guía explica qué se prueba en cada nivel, con qué herramienta y por qué
 | **Slice web** | La traducción HTTP ↔ puerto de cada controlador: códigos, JSON y errores | `@WebMvcTest` + `@MockitoBean` | Levanta solo la capa web con los puertos simulados: prueba cada código de estado sin base de datos ni servicios reales | `adaptadores/entrada/web/ControladoresWebTest` |
 | **Integración** | El adaptador de persistencia contra H2 real y un caso de uso completo sobre la base | `@DataJpaTest`, `@SpringBootTest` + `@Transactional` | Un doble no detecta un mapeo JPA mal hecho ni una consulta que ordena al revés; H2 embebida sí, y no necesita instalar nada | `integracion/persistencia/*IT` |
 | **Sistema** | La aplicación completa por HTTP, como la usa el navegador: controlador → puerto → servicio → dominio → H2 | `@SpringBootTest(RANDOM_PORT)` + `RestClient` | Caja negra: sin mocks ni beans internos. Es la única prueba que demuestra que los tres canales de entrada producen el mismo reporte | `integracion/sistema/*IT` |
-| **UI** | Dos flujos en Chrome: publicar un reporte con el asistente y reportar un avistamiento | Selenium + Page Objects | Pendiente de la tarea E2-T6 | `ui/*UIT` |
+| **UI** | Dos flujos en Chrome: publicar un reporte con el asistente y reportar un avistamiento | Selenium + Page Objects, Chrome sin ventana | Es lo único que prueba que los ganchos `data-prueba`, el JavaScript y la API funcionan juntos. Los Page Objects concentran los selectores y cada espera es explícita (`WebDriverWait`), sin pausas fijas | `ui/PaginaInicio`, `ui/PaginaNuevoReporte`, `ui/FlujosPrincipalesUIT` |
 | **Carga** | Latencia, errores y throughput con 50 usuarios en hora pico de reportes por voz | k6 | Ver [`perf/README.md`](../perf/README.md): SLO, escenario, resultados y cuello de botella | `perf/scripts/*.js` |
 
 Cómo se separan los niveles en Maven: el sufijo del nombre decide quién corre cada clase. `*Test` lo corre Surefire en `mvnw test`; `*IT` lo corre Failsafe en `mvnw verify`; `*UIT` solo corre con el perfil `ui`. Así `mvnw test` sigue siendo rápido y nunca levanta un servidor.
@@ -26,7 +26,7 @@ Desde la raíz del proyecto. En macOS, Linux y **Git Bash** de Windows se usa `.
 | Una sola clase | `./mvnw test -Dtest=MapeoDtoTest` | `.\mvnw.cmd test "-Dtest=MapeoDtoTest"` |
 | Todo: unitarias + integración + sistema (`*IT`) + cobertura | `./mvnw verify` | `.\mvnw.cmd verify` |
 | Solo las pruebas de sistema | `./mvnw verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT'` | `.\mvnw.cmd verify "-Dtest=NINGUNA" "-Dsurefire.failIfNoSpecifiedTests=false" "-Dit.test=FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT"` |
-| Interfaz (`*UIT`, necesita Chrome) | `./mvnw -Pui verify` | `.\mvnw.cmd -Pui verify` |
+| Interfaz (`*UIT`, necesita Chrome) | `./mvnw -q -Pui verify` | `.\mvnw.cmd -q -Pui verify` |
 | Carga (k6 instalado, app corriendo) | `k6 run perf/scripts/carga.js` | `k6 run perf/scripts/carga.js` |
 
 **Cobertura:** `mvnw verify` deja el reporte de jacoco en `target/site/jacoco/index.html` (ábrelo en el navegador).

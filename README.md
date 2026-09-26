@@ -64,7 +64,7 @@ Otras formas de correrla:
 |---|---|---|---|
 | Unitarias, arquitectura y capa web | `./mvnw test` | `.\mvnw.cmd test` | Todas las clases `*Test`, en segundos, sin levantar servidor |
 | Integración y sistema, con cobertura | `./mvnw verify` | `.\mvnw.cmd verify` | Lo anterior más las clases `*IT` (H2 real y la app completa por HTTP). Reporte de cobertura en `target/site/jacoco/index.html` |
-| Interfaz (necesita Chrome) | `./mvnw -Pui verify` | `.\mvnw.cmd -Pui verify` | Las clases `*UIT` con Selenium |
+| Interfaz (necesita Google Chrome instalado) | `./mvnw -q -Pui verify` | `.\mvnw.cmd -q -Pui verify` | Todo lo de `verify` más las clases `*UIT`: dos flujos con Selenium en un Chrome sin ventana. Selenium descarga solo el driver de Chrome la primera vez. Sin `-Pui` estas pruebas no corren, así que una máquina sin Chrome pasa igual |
 | Carga | `k6 run perf/scripts/carga.js` | `k6 run perf/scripts/carga.js` | 50 usuarios contra la app, que debe estar corriendo en otra terminal |
 
 Para repetir todo desde cero, como hace el equipo antes de cada entrega: `./mvnw clean verify`. La estrategia de cada nivel, los resultados y la matriz de casos están en [`docs/pruebas.md`](docs/pruebas.md); el detalle de carga, en [`perf/README.md`](perf/README.md). Las pruebas nunca llaman a Claude ni necesitan clave.

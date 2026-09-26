@@ -20,6 +20,8 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <exec.mainClass>petfinder.Main</exec.mainClass>
+        <!-- Las pruebas de UI (*UIT) necesitan Chrome: fuera por defecto, dentro con -Pui -->
+        <pruebas.ui.excluir>**/*UIT.java</pruebas.ui.excluir>
     </properties>
 
     <dependencies>
@@ -77,6 +79,12 @@
             <version>1.5.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- Pruebas de UI con Chrome (perfil ui); la versión la gestiona Spring Boot -->
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -94,10 +102,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
-            <!-- Integración y sistema: *IT (mvnw verify) -->
+            <!-- Integración y sistema: *IT (mvnw verify). *UIT también termina en IT: se excluye salvo con -Pui -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>${pruebas.ui.excluir}</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -135,4 +148,15 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- ./mvnw -q -Pui verify: agrega las pruebas de UI (*UIT) con Chrome sin ventana -->
+        <profile>
+            <id>ui</id>
+            <properties>
+                <!-- Vuelve a la exclusión por defecto de Failsafe (clases internas): así entran las *UIT -->
+                <pruebas.ui.excluir>**/*$*</pruebas.ui.excluir>
+            </properties>
+        </profile>
+    </profiles>
 </project>
