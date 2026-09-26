@@ -7,6 +7,79 @@ Red comunitaria de reportes y alertas para mascotas perdidas y encontradas.
 
 ---
 
+## Cómo ejecutar
+
+Esta sección lleva de un repositorio recién clonado a la app corriendo y a cada tipo de prueba ejecutado. No hace falta instalar Maven ni una base de datos: el proyecto trae el **Maven Wrapper** (`mvnw`) y usa H2 en memoria.
+
+### Requisitos
+
+| Qué | Para qué | Cómo comprobarlo |
+|---|---|---|
+| **JDK 17** | Compilar y correr la app | `java -version` debe decir 17 (con el wrapper: `./mvnw -v` → `Java version: 17`) |
+| Git | Clonar el repositorio. En Windows trae **Git Bash**, la terminal recomendada | `git --version` |
+| Google Chrome | Usar la app (la captura de voz funciona en Chrome y Edge) y las pruebas de interfaz | — |
+| k6 (opcional) | Solo para las pruebas de carga | `k6 version` |
+
+La primera vez que corras `mvnw` descarga Maven 3.9.16 y las dependencias: necesita internet y tarda unos minutos. Después funciona sin conexión.
+
+### Los mismos comandos en cada terminal
+
+En **macOS, Linux y Git Bash** (Windows) se usa `./mvnw`. En **PowerShell** se usa `.\mvnw.cmd` con los mismos argumentos. En PowerShell, un argumento que lleva `-D` y un punto o una coma va entre comillas: `.\mvnw.cmd test "-Dtest=MapeoDtoTest"`.
+
+### 1. Clonar y configurar
+
+```bash
+git clone https://github.com/DrearSanti/pet-finder-dyas.git
+cd pet-finder-dyas
+cp .env.example .env
+```
+
+En PowerShell el último paso es `Copy-Item .env.example .env`. El archivo `.env` es opcional y nunca se sube al repositorio. Solo hace falta si quieres usar el asistente con Claude: pon tu clave en `ANTHROPIC_API_KEY`. **Sin clave la app funciona completa**: el asistente entiende las frases con reglas (expresiones regulares).
+
+### 2. Correr la app
+
+| macOS / Git Bash | PowerShell |
+|---|---|
+| `./mvnw spring-boot:run` | `.\mvnw.cmd spring-boot:run` |
+
+Cuando la consola diga `Started PetFinderApplication`, abre **http://localhost:8080 en Chrome**. La app arranca con algunos casos de ejemplo. Para detenerla, `Ctrl + C`.
+
+Para probar la voz, permite el micrófono cuando Chrome lo pida. Si tu navegador no tiene reconocimiento de voz (Firefox, por ejemplo), el campo de texto hace lo mismo.
+
+Otras formas de correrla:
+
+| Para qué | macOS / Git Bash | PowerShell |
+|---|---|---|
+| Jar empaquetado | `./mvnw -q -DskipTests package` y luego `java -jar target/pet-finder.jar` | `.\mvnw.cmd -q -DskipTests package` y luego `java -jar target\pet-finder.jar` |
+| Otro puerto | `PORT=9090 ./mvnw spring-boot:run` | `$env:PORT="9090"; .\mvnw.cmd spring-boot:run` |
+| Demo de consola del Corte 1 | `./mvnw -q compile exec:java` | `.\mvnw.cmd -q compile exec:java` |
+| Menú de consola | `./mvnw -q compile exec:java -Dexec.args="--menu"` | `.\mvnw.cmd -q compile exec:java "-Dexec.args=--menu"` |
+| Docker | `docker build -t pet-finder .` y luego `docker run -p 8080:8080 pet-finder` | igual |
+
+**Consola de la base de datos:** con la app corriendo, http://localhost:8080/h2-console, JDBC URL `jdbc:h2:mem:petfinder`, usuario `sa`, sin contraseña.
+
+### 3. Correr las pruebas
+
+| Tipo | macOS / Git Bash | PowerShell | Qué corre |
+|---|---|---|---|
+| Unitarias, arquitectura y capa web | `./mvnw test` | `.\mvnw.cmd test` | Todas las clases `*Test`, en segundos, sin levantar servidor |
+| Integración y sistema, con cobertura | `./mvnw verify` | `.\mvnw.cmd verify` | Lo anterior más las clases `*IT` (H2 real y la app completa por HTTP). Reporte de cobertura en `target/site/jacoco/index.html` |
+| Interfaz (necesita Chrome) | `./mvnw -Pui verify` | `.\mvnw.cmd -Pui verify` | Las clases `*UIT` con Selenium |
+| Carga | `k6 run perf/scripts/carga.js` | `k6 run perf/scripts/carga.js` | 50 usuarios contra la app, que debe estar corriendo en otra terminal |
+
+Para repetir todo desde cero, como hace el equipo antes de cada entrega: `./mvnw clean verify`. La estrategia de cada nivel, los resultados y la matriz de casos están en [`docs/pruebas.md`](docs/pruebas.md); el detalle de carga, en [`perf/README.md`](perf/README.md). Las pruebas nunca llaman a Claude ni necesitan clave.
+
+### Problemas comunes en Windows
+
+| Síntoma | Causa | Qué hacer |
+|---|---|---|
+| `PKIX path building failed` al descargar dependencias | Un antivirus o proxy revisa las conexiones HTTPS con un certificado que Windows conoce pero Java no | Corre una vez con `MAVEN_OPTS="-Djavax.net.ssl.trustStoreType=Windows-ROOT" ./mvnw -U verify`; las siguientes ya usan lo descargado |
+| La app o las pruebas `*IT` fallan al arrancar con `Unable to establish loopback connection` / `Invalid argument: connect` | Java no logra crear su socket interno en la carpeta temporal de Windows | Apunta ese socket a otra carpeta: `JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:\Users\Public"` antes del comando (en PowerShell: `$env:JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:\Users\Public"`) |
+| `./mvnw: Permission denied` en Git Bash | El archivo perdió el permiso de ejecución | `sh mvnw test`, o `chmod +x mvnw` |
+| Una prueba falla después de abrir el proyecto en VS Code u otro IDE | El IDE recompiló `target/` con su propio compilador | Repite con `clean`: `./mvnw clean verify` |
+
+---
+
 ## 1. Presentación del Problema
 
 ### El problema y a quién afecta
@@ -533,12 +606,11 @@ La separación no es decorativa: cada paquete tiene una razón de cambio distint
 
 ### Ejecución
 
-Las instrucciones completas están en [`README_TECNICO.md`](README_TECNICO.md). En resumen:
+Desde el Corte 2 el proyecto usa el Maven Wrapper, así que no hace falta instalar Maven. Los pasos completos, para macOS, Git Bash y PowerShell, están en [Cómo ejecutar](#cómo-ejecutar). La demo del Corte 1 sigue disponible:
 
 ```bash
-mvn compile exec:java                        # demostración automática
-mvn compile exec:java -Dexec.args="--menu"   # menú interactivo
-mvn test                                     # las once pruebas
+./mvnw -q compile exec:java                        # demostración automática
+./mvnw -q compile exec:java -Dexec.args="--menu"   # menú interactivo
 ```
 
 ---

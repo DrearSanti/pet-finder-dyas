@@ -54,18 +54,18 @@ public class ReporteController {
     }
 
     @GetMapping("/{id}")
-    public ReporteDTO consultar(@PathVariable String id) {
+    public ReporteDTO consultar(@PathVariable("id") String id) {
         return ReporteDTO.detalle(gestionReportes.consultar(id));
     }
 
     @PostMapping("/{id}/resolver")
-    public ResponseEntity<Void> resolver(@PathVariable String id) {
+    public ResponseEntity<Void> resolver(@PathVariable("id") String id) {
         gestionReportes.resolver(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/cerrar")
-    public ResponseEntity<Void> cerrar(@PathVariable String id) {
+    public ResponseEntity<Void> cerrar(@PathVariable("id") String id) {
         gestionReportes.cerrar(id);
         return ResponseEntity.noContent().build();
     }
