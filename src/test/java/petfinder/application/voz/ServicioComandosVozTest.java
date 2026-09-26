@@ -58,7 +58,7 @@ class ServicioComandosVozTest {
     @DisplayName("Una pérdida dictada llega a GestionReportes con el nombre, la especie y la zona dichos")
     void perdidaLlegaAlCasoDeUso() {
         // Arrange
-        ReportePerdida creado = new ReportePerdida("PF-001", new Ubicacion("Chia", "Reportado por voz"),
+        ReportePerdida creado = new ReportePerdida("PF-001", new Ubicacion("Chía", "Reportado por voz"),
                 "perdí un perro llamado Max en Chía", new Mascota("Max", "perro", "", "", ""), CAMILA);
         when(gestionReportes.registrar(eq(TipoReporte.PERDIDA), any())).thenReturn(creado);
         ArgumentCaptor<SolicitudReporte> solicitud = ArgumentCaptor.forClass(SolicitudReporte.class);
@@ -68,7 +68,7 @@ class ServicioComandosVozTest {
         verify(gestionReportes).registrar(eq(TipoReporte.PERDIDA), solicitud.capture());
         assertEquals("Max", solicitud.getValue().mascota().nombre());
         assertEquals("perro", solicitud.getValue().mascota().especie());
-        assertEquals("Chia", solicitud.getValue().ubicacion().zonaOBarrio());
+        assertEquals("Chía", solicitud.getValue().ubicacion().zonaOBarrio());
         assertEquals("Reportado por voz", solicitud.getValue().ubicacion().referencia());
         assertEquals("perdí un perro llamado Max en Chía", solicitud.getValue().descripcion());
         assertEquals(CAMILA, solicitud.getValue().contacto());
@@ -80,7 +80,7 @@ class ServicioComandosVozTest {
     @DisplayName("Un hallazgo dictado llega a GestionReportes con la descripción del animal")
     void encontradaLlegaAlCasoDeUso() {
         // Arrange
-        ReporteEncontrada creado = new ReporteEncontrada("PF-002", new Ubicacion("Cajica", "Reportado por voz"),
+        ReporteEncontrada creado = new ReporteEncontrada("PF-002", new Ubicacion("Cajicá", "Reportado por voz"),
                 "encontré una gata blanca en Cajicá", "gata blanca", CAMILA);
         when(gestionReportes.registrar(eq(TipoReporte.ENCONTRADA), any())).thenReturn(creado);
         ArgumentCaptor<SolicitudReporte> solicitud = ArgumentCaptor.forClass(SolicitudReporte.class);
@@ -89,7 +89,7 @@ class ServicioComandosVozTest {
         // Assert
         verify(gestionReportes).registrar(eq(TipoReporte.ENCONTRADA), solicitud.capture());
         assertEquals("gata blanca", solicitud.getValue().descripcionMascota());
-        assertEquals("Cajica", solicitud.getValue().ubicacion().zonaOBarrio());
+        assertEquals("Cajicá", solicitud.getValue().ubicacion().zonaOBarrio());
         assertEquals(AccionVoz.REGISTRAR_ENCONTRADA, resultado.accion());
     }
 
@@ -125,7 +125,7 @@ class ServicioComandosVozTest {
     @DisplayName("Consultar un reporte por voz pide ese identificador al caso de uso")
     void consultarPideElIdentificador() {
         // Arrange
-        ReporteEncontrada existente = new ReporteEncontrada("PF-001", new Ubicacion("Chia", "Parque"),
+        ReporteEncontrada existente = new ReporteEncontrada("PF-001", new Ubicacion("Chía", "Parque"),
                 "Estaba sola", "Gata gris", CAMILA);
         when(gestionReportes.consultar("PF-001")).thenReturn(existente);
         // Act

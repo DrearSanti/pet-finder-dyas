@@ -20,11 +20,11 @@ import petfinder.application.service.InterpreteComandoVoz.Comando;
 class InterpreteComandoVozTest {
 
     @ParameterizedTest(name = "[{0}] → {1}, {2}, {3}")
-    @DisplayName("Una pérdida dictada se reconoce con especie, nombre y zona, sin importar tildes ni mayúsculas")
+    @DisplayName("Una pérdida dictada se reconoce con especie, nombre y zona, sin importar mayúsculas, y conserva las tildes")
     @CsvSource(delimiter = '|', value = {
-            "perdí un perro llamado Max en Chía        | perro | Max  | Chia",
+            "perdí un perro llamado Max en Chía        | perro | Max  | Chía",
             "Perdi una gata llamada Nala en Cedritos   | gato  | Nala | Cedritos",
-            "PERDÍ UN PERRO LLAMADO MAX EN CHÍA        | perro | Max  | Chia",
+            "PERDÍ UN PERRO LLAMADO MAX EN CHÍA        | perro | Max  | Chía",
             "Se me perdió mi perrita que se llama Luna en La Calera. | perro | Luna | La Calera"
     })
     void reconocePerdida(String frase, String especie, String nombre, String zona) {
@@ -49,7 +49,67 @@ class InterpreteComandoVozTest {
         // Assert
         assertEquals(AccionVoz.REGISTRAR_ENCONTRADA, comando.accion());
         assertEquals("gata blanca", comando.descripcion());
-        assertEquals("Cajica", comando.zona());
+        assertEquals("Cajicá", comando.zona());
+    }
+
+    @Test
+    @DisplayName("El nombre y la zona se guardan con sus tildes, como los dijo la persona")
+    void conservaTildesDeNombreYZona() {
+        // Arrange
+        InterpreteComandoVoz interprete = new InterpreteComandoVoz();
+        // Act
+        Comando comando = interprete.interpretar("perdí un gato llamado Tomás en Usaquén");
+        // Assert
+        assertEquals("Tomás", comando.nombre());
+        assertEquals("Usaquén", comando.zona());
+    }
+
+    @Test
+    @DisplayName("La descripción de un hallazgo conserva sus tildes")
+    void conservaTildesDeLaDescripcion() {
+        // Arrange
+        InterpreteComandoVoz interprete = new InterpreteComandoVoz();
+        // Act
+        Comando comando = interprete.interpretar("encontré un perro café en Chía");
+        // Assert
+        assertEquals("perro café", comando.descripcion());
+        assertEquals("Chía", comando.zona());
+    }
+
+    @Test
+    @DisplayName("La ñ se conserva en el nombre y en la zona")
+    void conservaLaEnie() {
+        // Arrange
+        InterpreteComandoVoz interprete = new InterpreteComandoVoz();
+        // Act
+        Comando comando = interprete.interpretar("perdí una perra llamada Ñata en La Peña");
+        // Assert
+        assertEquals("Ñata", comando.nombre());
+        assertEquals("La Peña", comando.zona());
+    }
+
+    @Test
+    @DisplayName("Una tilde escrita aparte de su letra se reconoce y se guarda como una sola letra")
+    void tildeEscritaAparte() {
+        // Arrange: "perdí" y "Chía" con la tilde como carácter combinado (así llegan de algunos teclados)
+        InterpreteComandoVoz interprete = new InterpreteComandoVoz();
+        String frase = "perdi\u0301 un perro llamado Max en Chi\u0301a";
+        // Act
+        Comando comando = interprete.interpretar(frase);
+        // Assert
+        assertEquals(AccionVoz.REGISTRAR_PERDIDA, comando.accion());
+        assertEquals("Ch\u00eda", comando.zona());
+    }
+
+    @Test
+    @DisplayName("Los signos dentro de la zona se limpian igual que antes, sin perder las tildes")
+    void signosDentroDeLaZona() {
+        // Arrange
+        InterpreteComandoVoz interprete = new InterpreteComandoVoz();
+        // Act
+        Comando comando = interprete.interpretar("perdí un perro llamado Max en Chía, Cundinamarca.");
+        // Assert
+        assertEquals("Chía Cundinamarca", comando.zona());
     }
 
     @ParameterizedTest(name = "[{0}]")

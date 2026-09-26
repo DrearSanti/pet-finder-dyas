@@ -105,13 +105,18 @@ async function compartir(titulo, ruta) {
 
 /* ---------- Lista de casos y mapa ---------- */
 
+/** Los datos se guardan con tildes; al buscar no importan: "usaquen" encuentra "Usaquén". */
+function paraComparar(texto) {
+  return String(texto).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
 function casosFiltrados() {
-  const texto = busqueda.trim().toLowerCase();
+  const texto = paraComparar(busqueda.trim());
   return casos.filter((caso) => {
     if (filtro !== 'todos' && caso.tipo !== filtro) return false;
     if (!texto) return true;
     return [tituloDe(caso), caso.zona, caso.especie, caso.descripcionMascota]
-      .some((campo) => !vacio(campo) && String(campo).toLowerCase().includes(texto));
+      .some((campo) => !vacio(campo) && paraComparar(campo).includes(texto));
   });
 }
 

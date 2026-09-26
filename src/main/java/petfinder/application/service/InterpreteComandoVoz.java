@@ -62,26 +62,26 @@ public class InterpreteComandoVoz {
         if (texto == null || texto.isBlank() || texto.length() > LONGITUD_MAXIMA) {
             return Comando.noReconocido();
         }
-        String frase = normalizar(texto);
+        Frase frase = Frase.de(texto);
 
-        Matcher perdida = PERDIDA.matcher(frase);
+        Matcher perdida = PERDIDA.matcher(frase.normalizada());
         if (perdida.matches() && !NO_SON_ESPECIE.contains(perdida.group("especie"))) {
             return new Comando(AccionVoz.REGISTRAR_PERDIDA,
-                    capitalizar(perdida.group("nombre")),
+                    capitalizar(frase.original(perdida, "nombre")),
                     normalizarEspecie(perdida.group("especie")),
-                    capitalizar(perdida.group("zona")),
+                    capitalizar(frase.original(perdida, "zona")),
                     null, null);
         }
-        Matcher encontrada = ENCONTRADA.matcher(frase);
+        Matcher encontrada = ENCONTRADA.matcher(frase.normalizada());
         if (encontrada.matches()) {
             return new Comando(AccionVoz.REGISTRAR_ENCONTRADA, null, null,
-                    capitalizar(encontrada.group("zona")),
-                    encontrada.group("descripcion"), null);
+                    capitalizar(frase.original(encontrada, "zona")),
+                    frase.original(encontrada, "descripcion"), null);
         }
-        if (LISTAR.matcher(frase).matches()) {
+        if (LISTAR.matcher(frase.normalizada()).matches()) {
             return new Comando(AccionVoz.LISTAR_ACTIVOS, null, null, null, null, null);
         }
-        Matcher consulta = CONSULTAR.matcher(frase);
+        Matcher consulta = CONSULTAR.matcher(frase.normalizada());
         if (consulta.matches()) {
             String id = String.format("PF-%03d", Integer.parseInt(consulta.group("numero")));
             return new Comando(AccionVoz.CONSULTAR, null, null, null, null, id);
@@ -90,18 +90,67 @@ public class InterpreteComandoVoz {
     }
 
     /**
-     * El reconocedor del navegador escribe distinto la misma frase: con o sin
-     * tildes, en mayúsculas, con signos. Normalizar antes de comparar hace que
-     * las expresiones regulares solo tengan que conocer una forma. La ñ se
-     * conserva porque cambia la palabra (año no es ano).
+     * La frase en dos versiones. El reconocedor del navegador escribe distinto
+     * la misma frase: con o sin tildes, en mayúsculas, con signos. Las
+     * expresiones regulares corren sobre la normalizada para conocer una sola
+     * forma. Pero lo que se guarda (nombre, zona, descripción) se copia de la
+     * original: quitar tildes sirve para entender, no para guardar, y "Chía"
+     * tiene que llegar a la base igual que por el formulario o el asistente.
+     *
+     * @param posiciones posiciones[i] es el índice en original de la letra i de normalizada
      */
-    private static String normalizar(String texto) {
-        String sinTildes = Normalizer.normalize(texto.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
-                .replace("ñ", "ñ")
-                .replaceAll("\\p{M}", "");
-        return sinTildes.replaceAll("[.,¡!¿?]", " ")
-                .replaceAll("\\s+", " ")
-                .strip();
+    private record Frase(String normalizada, String original, int[] posiciones) {
+
+        private static final String SIGNOS = ".,¡!¿?";
+
+        static Frase de(String texto) {
+            // Compuesta: así una tilde escrita aparte de su letra no ocupa una posición propia.
+            String original = Normalizer.normalize(texto, Normalizer.Form.NFC);
+            StringBuilder normalizada = new StringBuilder();
+            int[] posiciones = new int[original.length() * 3 + 1];
+            for (int i = 0; i < original.length(); i++) {
+                for (char letra : sinTildeNiSigno(original.charAt(i)).toCharArray()) {
+                    boolean espacio = Character.isWhitespace(letra);
+                    boolean sobra = espacio && (normalizada.isEmpty()
+                            || normalizada.charAt(normalizada.length() - 1) == ' ');
+                    if (!sobra) {
+                        posiciones[normalizada.length()] = i;
+                        normalizada.append(espacio ? ' ' : letra);
+                    }
+                }
+            }
+            if (!normalizada.isEmpty() && normalizada.charAt(normalizada.length() - 1) == ' ') {
+                normalizada.setLength(normalizada.length() - 1);
+            }
+            return new Frase(normalizada.toString(), original, posiciones);
+        }
+
+        /** La ñ se conserva porque cambia la palabra (año no es ano). */
+        private static String sinTildeNiSigno(char letra) {
+            if (letra == 'ñ' || letra == 'Ñ') {
+                return "ñ";
+            }
+            if (SIGNOS.indexOf(letra) >= 0) {
+                return " ";
+            }
+            return Normalizer.normalize(String.valueOf(letra).toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+                    .replaceAll("\\p{M}", "");
+        }
+
+        /**
+         * El trozo de la frase original que corresponde a un grupo de la
+         * normalizada, con sus tildes. Se pasa a minúsculas y se limpia de
+         * signos igual que la normalizada, para que solo cambien las tildes.
+         */
+        String original(Matcher coincidencia, String grupo) {
+            int inicio = coincidencia.start(grupo);
+            int fin = coincidencia.end(grupo);
+            return original.substring(posiciones[inicio], posiciones[fin - 1] + 1)
+                    .toLowerCase(Locale.ROOT)
+                    .replaceAll("[.,¡!¿?]", " ")
+                    .replaceAll("\\s+", " ")
+                    .strip();
+        }
     }
 
     /** "perrita", "perrito" y "perra" son el mismo animal para quien busca. */
