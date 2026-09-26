@@ -1,0 +1,20 @@
+{
+  "que_se_midio": "Consultas SQL SELECT que dispara una sola llamada POST /api/voz con \"ver reportes\"",
+  "como": "Instancia aparte con --spring.jpa.show-sql=true; se contaron las líneas \"Hibernate: select\" antes y después de la llamada",
+  "mediciones": [
+    {
+      "casos_en_la_lista": 4,
+      "consultas_select": 4
+    },
+    {
+      "casos_en_la_lista": 10,
+      "consultas_select": 10
+    },
+    {
+      "casos_en_la_lista": 30,
+      "consultas_select": 30
+    }
+  ],
+  "lectura": "Una consulta para la lista de reportes más una por cada pérdida para cargar sus avistamientos (1 + (N - 1) = N cuando hay un hallazgo): es el problema N+1",
+  "extrapolacion": "Con 10.725 casos, cada \"ver reportes\" ejecuta unas 10.725 consultas. No es una medición: es aritmética sobre la relación lineal observada"
+}

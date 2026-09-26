@@ -1,0 +1,19 @@
+{
+  "prueba": "carga",
+  "consulta_sql": "SELECT COUNT(*) FROM REPORTES",
+  "donde_se_ejecuto": "consola de H2 de la propia app (http://localhost:8080/h2-console, jdbc:h2:mem:petfinder), con la app aún viva tras la prueba",
+  "resultado_consulta": 10725,
+  "respuestas_201_contadas_por_k6": 10721,
+  "casos_de_ejemplo_al_arrancar": 4,
+  "esperado": 10725,
+  "coincide": true,
+  "lectura": "Con 50 usuarios registrando a la vez no se perdió ni se duplicó ningún reporte",
+  "baseline": {
+    "respuestas_201_contadas_por_k6": 295,
+    "casos_de_ejemplo_al_arrancar": 4,
+    "esperado": 299,
+    "reportes_segun_la_api": 299,
+    "coincide": true,
+    "nota": "El baseline se verificó por la API (GET /api/reportes, todos los reportes son ACTIVO), no con la consola SQL"
+  }
+}

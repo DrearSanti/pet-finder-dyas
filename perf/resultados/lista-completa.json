@@ -1,0 +1,11 @@
+{
+  "que_se_midio": "Una sola llamada a \"ver reportes\" con la lista completa, con la app en reposo justo después de la prueba de carga",
+  "casos_en_la_lista": 10725,
+  "tiempos_s": [
+    0.073457,
+    0.058233,
+    0.057817
+  ],
+  "tamano_respuesta_bytes": 5206160,
+  "registrar_un_caso_nuevo_s": 0.012566
+}
