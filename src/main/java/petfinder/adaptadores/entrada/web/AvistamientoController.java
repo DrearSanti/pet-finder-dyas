@@ -41,7 +41,7 @@ public class AvistamientoController {
      * nueva sin pedirlo otra vez.
      */
     @PostMapping("/api/reportes/{id}/avistamientos")
-    public ResponseEntity<ReporteDTO> registrar(@PathVariable String id, @RequestBody AvistamientoDTO cuerpo) {
+    public ResponseEntity<ReporteDTO> registrar(@PathVariable("id") String id, @RequestBody AvistamientoDTO cuerpo) {
         String idAvistamiento = "AV-" + UUID.randomUUID().toString().substring(0, 8);
         registroAvistamientos.registrar(id, cuerpo.aAvistamiento(idAvistamiento, LocalDateTime.now()));
         return ResponseEntity.status(HttpStatus.CREATED)
