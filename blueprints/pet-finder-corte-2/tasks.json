@@ -158,7 +158,7 @@
       "src/test/java/petfinder/application/service/ServicioAvistamientosMockTest.java",
       "src/test/java/petfinder/application/service/ServicioReportesMockTest.java"
     ],
-    "status": "pending"
+    "status": "done"
   },
   {
     "id": "E1-T3",
