@@ -49,6 +49,8 @@ let ultimoPublicado = null;
 let rutaEnCurso = 0;
 let mapa = null;
 let selector = null;
+let pinManual = false;
+let coordenadasDelPin = null;
 let microfonoActivo = null;
 // {latitud, longitud} mientras "Cerca de ti" está activo; null muestra todos los casos.
 let miPosicion = null;
@@ -172,7 +174,11 @@ function crearTarjetaCaso(caso) {
     el('span', 'nombre', tituloDe(caso)),
     el('span', 'meta', `${caso.zona}${distancia} · ${haceCuanto(caso.fechaCreacion)}${pistas}`),
   );
-  enlace.append(foto, texto, el('span', `estado ${clase}`, ETIQUETA_TIPO[caso.tipo] || 'Caso'));
+  // Una pérdida que alguien dice tener ya se ve como encontrada (DESIGN.md §3.2), aunque siga activa.
+  const etiqueta = caso.laTieneAlguien
+    ? el('span', 'estado encontrada', 'Encontrada')
+    : el('span', `estado ${clase}`, ETIQUETA_TIPO[caso.tipo] || 'Caso');
+  enlace.append(foto, texto, etiqueta);
   return enlace;
 }
 
@@ -349,20 +355,143 @@ const tarjeta = crearTarjetaViva({
   alError: (mensaje) => mostrarMensaje(mensaje, true),
 });
 
-async function enviarFraseAlAsistente(texto) {
-  const frase = texto.trim();
-  if (!frase) return;
-  const boton = porPrueba('boton-enviar-texto');
+/* ---------- Posibles coincidencias ("La tengo yo" desde un hallazgo) ---------- */
+
+const MAXIMO_COINCIDENCIAS = 3;
+
+/** Un nombre como "Max (el grande)" no debe romper la búsqueda: sus símbolos se buscan literales. */
+function escaparRegex(texto) {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** "perrita", "perro" y "perrito" son la misma especie para comparar; igual "gata", "gato" y "gatico". */
+function especieDe(texto) {
+  const normalizado = paraComparar(texto || '');
+  if (normalizado.includes('perr')) return 'perro';
+  if (normalizado.includes('gat')) return 'gato';
+  return '';
+}
+
+/**
+ * Casos perdidos que podrían ser la mascota que la persona encontró: primero los que nombra
+ * ("encontré a Copito"), luego los de la misma especie cerca del pin o en la misma zona. Solo
+ * sugiere (DESIGN.md §2.3: "Posible coincidencia"); decidir que es esa mascota es de la persona.
+ */
+function posiblesCoincidencias(borrador) {
+  if (!borrador || borrador.tipo !== 'ENCONTRADA') return [];
+  const texto = paraComparar([borrador.nombre, borrador.descripcionMascota, borrador.descripcion]
+    .filter((v) => !vacio(v)).join(' '));
+  const especie = especieDe(`${borrador.especie || ''} ${texto}`);
+  const pin = coordenadasDelPin || (tieneCoordenadas(borrador) ? borrador : null);
+  const zona = vacio(borrador.zona) ? '' : paraComparar(borrador.zona);
+  return casos
+    .filter((caso) => caso.tipo === 'PERDIDA' && !caso.laTieneAlguien)
+    .map((caso) => {
+      const nombre = vacio(caso.nombreMascota) ? '' : paraComparar(caso.nombreMascota);
+      const distancia = pin && tieneCoordenadas(caso) ? distanciaKm(pin, caso) : Infinity;
+      return {
+        caso,
+        distancia,
+        porNombre: nombre.length >= 3 && new RegExp(`\\b${escaparRegex(nombre)}\\b`).test(texto),
+        cerca: distancia <= RADIO_KM || (zona !== '' && paraComparar(caso.zona) === zona),
+        mismaEspecie: especie !== '' && especieDe(caso.especie) === especie,
+      };
+    })
+    .filter((c) => c.porNombre || (c.mismaEspecie && c.cerca))
+    .sort((a, b) => Number(b.porNombre) - Number(a.porNombre) || a.distancia - b.distancia)
+    .slice(0, MAXIMO_COINCIDENCIAS);
+}
+
+function pintarCoincidencias(borrador) {
+  const encontradas = posiblesCoincidencias(borrador);
+  porRol('coincidencias').hidden = encontradas.length === 0;
+  porRol('lista-coincidencias').replaceChildren(...encontradas.map(({ caso, distancia }) => {
+    const fila = el('div', 'coincidencia');
+    const texto = el('div', 't');
+    const lejania = Number.isFinite(distancia) ? ` · ${formatearDistancia(distancia)}` : '';
+    texto.append(
+      el('span', 'nombre', tituloDe(caso)),
+      el('span', 'meta', `${aspectoDe(caso) || caso.zona} · ${caso.zona}${lejania}`),
+    );
+    const boton = el('button', 'btn btn-secundario', 'Es esta');
+    boton.type = 'button';
+    boton.dataset.prueba = 'boton-es-esta';
+    boton.addEventListener('click', () => avisarQueLaTengo(caso, borrador, boton));
+    fila.append(texto, boton);
+    return fila;
+  }));
+}
+
+/** "Es esta": el hallazgo queda en el caso de la familia en vez de publicarse como un reporte aparte. */
+async function avisarQueLaTengo(caso, borrador, boton) {
+  if (vacio(borrador.contactoMedio)) {
+    mostrarMensaje('Primero dinos tu celular o correo para que su familia te encuentre.', true);
+    return;
+  }
+  const pin = coordenadasDelPin || (tieneCoordenadas(borrador) ? borrador : { latitud: null, longitud: null });
   boton.disabled = true;
   try {
-    const respuesta = await tarjeta.enviarFrase(frase);
-    if (respuesta.fuente === 'ninguna') {
-      mostrarMensaje('No entendí del todo. Cuéntalo con otras palabras o completa la tarjeta a mano.');
-    }
+    await registrarAvistamiento(caso.id, {
+      tipo: 'LA_TENGO',
+      zona: vacio(borrador.zona) ? caso.zona : borrador.zona,
+      referencia: vacio(borrador.referencia) ? null : borrador.referencia,
+      latitud: pin.latitud,
+      longitud: pin.longitud,
+      descripcion: borrador.descripcionMascota || borrador.descripcion || 'La tengo conmigo',
+      nombreContacto: vacio(borrador.contactoNombre) ? null : borrador.contactoNombre,
+      medioContacto: borrador.contactoMedio,
+    });
+    mostrarMensaje(`Listo. Tu aviso quedó en el caso de ${tituloDe(caso)} con tu contacto.`);
+    await cargarCasos(true);
+    navegar(`#/caso/${encodeURIComponent(caso.id)}`);
   } catch (error) {
     mostrarError(error);
   } finally {
     boton.disabled = false;
+  }
+}
+
+async function enviarFraseAlAsistente(texto) {
+  const frase = texto.trim();
+  if (!frase) return;
+  const boton = porPrueba('boton-enviar-texto');
+  const ficha = rutaEnCurso;
+  boton.disabled = true;
+  try {
+    const respuesta = await tarjeta.enviarFrase(frase);
+    if (!respuesta || ficha !== rutaEnCurso || aplicacion.dataset.vista !== 'nuevo') return;
+    const { latitud, longitud } = respuesta.borrador;
+    if (!pinManual && Number.isFinite(latitud) && Number.isFinite(longitud)) {
+      coordenadasDelPin = { latitud, longitud };
+      selector?.mover(latitud, longitud);
+    }
+    // El turno pudo salir antes de elegir el pin o de recibir la ubicación del dispositivo.
+    // Restaurarlo también en la tarjeta evita publicar coordenadas distintas de las que se ven.
+    if (coordenadasDelPin) {
+      tarjeta.fijarCoordenadas(coordenadasDelPin.latitud, coordenadasDelPin.longitud);
+    }
+    pintarCoincidencias(respuesta.borrador);
+    if (respuesta.fuente === 'ninguna') {
+      mostrarMensaje('No entendí del todo. Cuéntalo con otras palabras o completa la tarjeta a mano.');
+    }
+  } catch (error) {
+    if (ficha === rutaEnCurso) mostrarError(error);
+  } finally {
+    if (ficha === rutaEnCurso) boton.disabled = false;
+  }
+}
+
+/** La ubicación es solo el punto de partida: nunca gana a una elección o a un lugar ya sugerido. */
+async function ubicarReporte(ficha) {
+  if (!selector) return;
+  try {
+    const posicion = await obtenerUbicacion();
+    if (ficha !== rutaEnCurso || aplicacion.dataset.vista !== 'nuevo' || pinManual || coordenadasDelPin) return;
+    coordenadasDelPin = posicion;
+    selector.mover(posicion.latitud, posicion.longitud);
+    tarjeta.fijarCoordenadas(posicion.latitud, posicion.longitud);
+  } catch {
+    // Negar una ayuda automática no es un error: el mapa sigue disponible para elegir a mano.
   }
 }
 
@@ -428,12 +557,17 @@ function pintarDetalle(caso) {
   porRol('caso-descripcion').textContent = caso.descripcion || '';
   // Un caso resuelto o cerrado se puede abrir desde un enlace compartido: se muestra, pero sin acciones.
   const activo = casoActivo(caso);
+  if (activo && caso.laTieneAlguien) {
+    estado.className = 'estado encontrada';
+    estado.textContent = 'Encontrada';
+  }
   if (!activo) {
     estado.className = `estado${caso.estado === 'RESUELTO' ? ' resuelto' : ''}`;
     estado.textContent = ETIQUETA_CERRADO[caso.estado] || 'Cerrado';
   }
   // Solo una pérdida admite avistamientos; de un hallazgo se habla directamente con quien lo encontró.
   porPrueba('boton-la-vi').hidden = !activo || caso.tipo === 'ENCONTRADA';
+  pintarHallazgo(caso);
   const textos = TEXTOS_CIERRE[caso.tipo] || TEXTOS_CIERRE.PERDIDA;
   porPrueba('boton-resolver').textContent = textos.enlace;
   porRol('pregunta-cierre').textContent = textos.pregunta;
@@ -455,10 +589,27 @@ function pintarDetalle(caso) {
         el('b', '', vacio(pista.descripcion) ? pista.zona : pista.descripcion),
         el('span', '', `${pista.zona} · ${haceCuanto(pista.fechaHora)}`),
       );
-      fila.append(el('i'), texto);
+      fila.append(el('i', pista.tipo === 'LA_TENGO' ? 'encontrada' : ''), texto);
       return fila;
     }));
   }
+}
+
+/** "Alguien tiene a Copito": solo en el detalle, con el contacto de quien la tiene (siempre con textContent). */
+function pintarHallazgo(caso) {
+  const hallazgo = caso.hallazgo;
+  porRol('caso-hallazgo').hidden = !hallazgo;
+  if (!hallazgo) return;
+  porRol('hallazgo-titulo').textContent = `Alguien tiene a ${tituloDe(caso)}`;
+  porRol('hallazgo-donde').textContent = [hallazgo.descripcion, hallazgo.zona, haceCuanto(hallazgo.fechaHora)]
+    .filter((parte) => !vacio(parte)).join(' · ');
+  porRol('hallazgo-contacto').textContent = vacio(hallazgo.nombreContacto)
+    ? hallazgo.contacto : `${hallazgo.nombreContacto} · ${hallazgo.contacto}`;
+}
+
+/** "La tengo yo" solo tiene sentido en una pérdida activa: de un hallazgo se habla con quien lo publicó. */
+function puedeDecirLaTengo(caso) {
+  return casoActivo(caso) && caso.tipo !== 'ENCONTRADA';
 }
 
 function casoActivo(caso) {
@@ -469,6 +620,7 @@ function casoActivo(caso) {
 function mostrarConfirmacionCierre(abierta) {
   const activo = casoAbierto ? casoActivo(casoAbierto) : false;
   porRol('acciones-caso').hidden = abierta;
+  porPrueba('boton-la-tengo').hidden = abierta || !casoAbierto || !puedeDecirLaTengo(casoAbierto);
   porPrueba('boton-resolver').hidden = abierta || !activo;
   porRol('confirmar-cierre').hidden = !abierta;
 }
@@ -513,9 +665,26 @@ async function abrirDetalle(id, ficha) {
 /* ---------- Vista: avistamiento ---------- */
 
 let coordenadasPista = { latitud: null, longitud: null };
+// 'la-vi' deja una pista; 'la-tengo' avisa que la persona tiene a la mascota (contacto obligatorio).
+let modoPista = 'la-vi';
 
-async function abrirAvistamiento(id, ficha) {
+const TEXTOS_PISTA = {
+  'la-vi': {
+    titulo: (nombre) => `¿Dónde viste a ${nombre}?`, donde: 'Dónde', que: 'Qué viste',
+    contacto: 'Opcional', etiquetaContacto: 'Tu contacto, opcional', boton: 'Enviar pista', pin: 'avistamiento',
+    ayuda: 'Toca el mapa para marcar dónde la viste, o la flecha si estás ahí. Puedes arrastrar el pin si hace falta.',
+  },
+  'la-tengo': {
+    titulo: (nombre) => `¿Dónde está ${nombre}?`, donde: 'Dónde está', que: 'Cómo está',
+    contacto: 'Falta', etiquetaContacto: 'Tu contacto', boton: 'Avisar que la tengo', pin: 'encontrada',
+    ayuda: 'Marca dónde la tienes, o toca la flecha si estás con ella. Tu contacto aparece en este caso para que su familia te escriba.',
+  },
+};
+
+async function abrirAvistamiento(id, ficha, modo = 'la-vi') {
   idSeleccionado = id;
+  modoPista = modo;
+  const textos = TEXTOS_PISTA[modo];
   coordenadasPista = { latitud: null, longitud: null };
   try {
     const caso = casoAbierto && casoAbierto.id === id ? casoAbierto : await consultarReporte(id);
@@ -524,13 +693,19 @@ async function abrirAvistamiento(id, ficha) {
     const estado = porRol('pista-caso');
     estado.className = `estado ${CLASE_TIPO[caso.tipo] || 'perdida'}`;
     estado.textContent = `${tituloDe(caso)} · ${caso.id}`;
-    porRol('pista-titulo').textContent = `¿Dónde viste a ${tituloDe(caso)}?`;
+    porRol('pista-titulo').textContent = textos.titulo(tituloDe(caso));
+    porRol('pista-k-donde').textContent = textos.donde;
+    porRol('pista-k-que').textContent = textos.que;
+    porRol('pista-ayuda').textContent = textos.ayuda;
+    porRol('pista-contacto').placeholder = textos.contacto;
+    porRol('pista-contacto').setAttribute('aria-label', textos.etiquetaContacto);
+    porPrueba('boton-enviar-pista').textContent = textos.boton;
     porRol('pista-zona').value = caso.zona || '';
     porRol('pista-descripcion').value = '';
     porRol('pista-contacto').value = '';
     const vistaEn = typeof caso.latitud === 'number' && typeof caso.longitud === 'number'
       ? [caso.latitud, caso.longitud] : null;
-    montarSelector('mapa-avistamiento', 'avistamiento', {
+    montarSelector('mapa-avistamiento', textos.pin, {
       vistaEn,
       alElegir: (latitud, longitud) => { coordenadasPista = { latitud, longitud }; },
     });
@@ -546,6 +721,12 @@ async function enviarPista() {
   const boton = porPrueba('boton-enviar-pista');
   boton.disabled = true;
   const contacto = porRol('pista-contacto').value;
+  const laTengo = modoPista === 'la-tengo';
+  if (laTengo && vacio(contacto)) {
+    mostrarMensaje('Deja tu contacto para que su familia te encuentre.', true);
+    boton.disabled = false;
+    return;
+  }
   try {
     await registrarAvistamiento(casoAbierto.id, {
       zona: porRol('pista-zona').value,
@@ -555,8 +736,11 @@ async function enviarPista() {
       descripcion: porRol('pista-descripcion').value,
       nombreContacto: null,
       medioContacto: vacio(contacto) ? null : contacto,
+      tipo: laTengo ? 'LA_TENGO' : 'LA_VI',
     });
-    mostrarMensaje('Pista enviada. Gracias por avisar.');
+    mostrarMensaje(laTengo
+      ? `Listo. Tu aviso quedó en el caso de ${tituloDe(casoAbierto)} con tu contacto.`
+      : 'Pista enviada. Gracias por avisar.');
     await cargarCasos(true);
     navegar(`#/caso/${encodeURIComponent(casoAbierto.id)}`);
   } catch (error) {
@@ -586,6 +770,7 @@ const RUTAS = [
   [/^#\/nuevo$/, () => ({ vista: 'nuevo' })],
   [/^#\/caso\/([^/]+)$/, (m) => ({ vista: 'caso', id: decodeURIComponent(m[1]) })],
   [/^#\/caso\/([^/]+)\/avistamiento$/, (m) => ({ vista: 'avistamiento', id: decodeURIComponent(m[1]) })],
+  [/^#\/caso\/([^/]+)\/la-tengo$/, (m) => ({ vista: 'avistamiento', id: decodeURIComponent(m[1]), modo: 'la-tengo' })],
   [/^#\/publicado\/([^/]+)$/, (m) => ({ vista: 'publicado', id: decodeURIComponent(m[1]) })],
 ];
 
@@ -599,7 +784,7 @@ function resolverRuta(hash) {
 
 function enrutar() {
   const ficha = ++rutaEnCurso;
-  const { vista, id } = resolverRuta(location.hash);
+  const { vista, id, modo } = resolverRuta(location.hash);
   detenerCaptura();
   clearInterval(vigilante);
   actualizarMicrofonos();
@@ -622,14 +807,23 @@ function enrutar() {
     if (mapa) mapa.invalidar();
   } else if (vista === 'nuevo') {
     pintarLista();
+    pinManual = false;
+    coordenadasDelPin = null;
+    porPrueba('boton-enviar-texto').disabled = false;
     tarjeta.reiniciar();
+    pintarCoincidencias(null);
     montarSelector('mapa-reporte', 'perdida', {
-      alElegir: (latitud, longitud) => tarjeta.fijarCoordenadas(latitud, longitud),
+      alElegir: (latitud, longitud) => {
+        pinManual = true;
+        coordenadasDelPin = { latitud, longitud };
+        tarjeta.fijarCoordenadas(latitud, longitud);
+      },
     });
+    ubicarReporte(ficha);
   } else if (vista === 'caso') {
     abrirDetalle(id, ficha);
   } else if (vista === 'avistamiento') {
-    abrirAvistamiento(id, ficha);
+    abrirAvistamiento(id, ficha, modo);
   } else if (vista === 'publicado') {
     abrirPublicado(id);
   }
@@ -653,6 +847,9 @@ function conectarEventos() {
   });
   porPrueba('boton-enviar-pista').addEventListener('click', enviarPista);
   porPrueba('boton-resolver').addEventListener('click', () => mostrarConfirmacionCierre(true));
+  porPrueba('boton-la-tengo').addEventListener('click', () => {
+    if (casoAbierto) navegar(`#/caso/${encodeURIComponent(casoAbierto.id)}/la-tengo`);
+  });
   porRol('cancelar-cierre').addEventListener('click', () => mostrarConfirmacionCierre(false));
   porPrueba('boton-confirmar-resolver').addEventListener('click', resolverCaso);
   porRol('ver-todos').addEventListener('click', verTodos);

@@ -75,6 +75,15 @@ public class ReportePerdida extends ReporteMascota {
         return Collections.unmodifiableList(avistamientos);
     }
 
+    /**
+     * Verdadero si alguien avisó que tiene a la mascota. El caso sigue activo
+     * hasta que la familia confirme que ya apareció: el aviso no se verifica,
+     * así que no cierra el caso por sí solo.
+     */
+    public boolean laTieneAlguien() {
+        return avistamientos.stream().anyMatch(Avistamiento::esHallazgo);
+    }
+
     public Mascota getMascota() {
         return mascota;
     }

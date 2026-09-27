@@ -19,6 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -74,7 +75,74 @@ class ExtractorClaudeTest {
         assertEquals("Luna", borrador.nombre());
         assertEquals("perro", borrador.especie());
         assertEquals("Cedritos", borrador.zona());
+        assertNull(borrador.latitud());
+        assertNull(borrador.longitud());
         assertNull(borrador.contactoMedio());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Las coordenadas dentro de los límites de Colombia llegan juntas al borrador")
+    @CsvSource({"4.702, -74.041", "-4.3, -79.1", "13.5, -66.8"})
+    void coordenadasValidas(double latitud, double longitud) {
+        // Arrange
+        when(cliente.completarJson(any(), any())).thenReturn(
+                "{\"nombre\":\"Luna\",\"latitud\":" + latitud + ",\"longitud\":" + longitud + "}");
+        // Act
+        BorradorReporte borrador = extraer(extractor(CLAVE, 200), FRASE).orElseThrow();
+        // Assert
+        assertEquals(latitud, borrador.latitud());
+        assertEquals(longitud, borrador.longitud());
+        assertEquals("Luna", borrador.nombre());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Las coordenadas fuera de Colombia se descartan sin perder los demás datos")
+    @CsvSource({"-4.31, -74.041", "13.51, -74.041", "4.702, -79.11", "4.702, -66.79"})
+    void coordenadasFueraDeColombia(double latitud, double longitud) {
+        // Arrange
+        when(cliente.completarJson(any(), any())).thenReturn(
+                "{\"nombre\":\"Luna\",\"latitud\":" + latitud + ",\"longitud\":" + longitud + "}");
+        // Act
+        BorradorReporte borrador = extraer(extractor(CLAVE, 200), FRASE).orElseThrow();
+        // Assert
+        assertNull(borrador.latitud());
+        assertNull(borrador.longitud());
+        assertEquals("Luna", borrador.nombre());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Una sola coordenada nunca se mezcla con la ubicación anterior")
+    @ValueSource(strings = {
+            "\"latitud\":4.702", "\"longitud\":-74.041",
+            "\"latitud\":4.702,\"longitud\":null", "\"latitud\":null,\"longitud\":-74.041"
+    })
+    void coordenadasIncompletas(String coordenadas) {
+        // Arrange
+        when(cliente.completarJson(any(), any())).thenReturn("{\"nombre\":\"Luna\"," + coordenadas + "}");
+        // Act
+        BorradorReporte borrador = extraer(extractor(CLAVE, 200), FRASE).orElseThrow();
+        // Assert
+        assertNull(borrador.latitud());
+        assertNull(borrador.longitud());
+        assertEquals("Luna", borrador.nombre());
+    }
+
+    @ParameterizedTest
+    @DisplayName("Las coordenadas que no son números se descartan juntas")
+    @ValueSource(strings = {
+            "\"latitud\":\"4.702\",\"longitud\":-74.041",
+            "\"latitud\":4.702,\"longitud\":\"-74.041\"",
+            "\"latitud\":true,\"longitud\":-74.041"
+    })
+    void coordenadasNoNumericas(String coordenadas) {
+        // Arrange
+        when(cliente.completarJson(any(), any())).thenReturn("{\"nombre\":\"Luna\"," + coordenadas + "}");
+        // Act
+        BorradorReporte borrador = extraer(extractor(CLAVE, 200), FRASE).orElseThrow();
+        // Assert
+        assertNull(borrador.latitud());
+        assertNull(borrador.longitud());
+        assertEquals("Luna", borrador.nombre());
     }
 
     @Test

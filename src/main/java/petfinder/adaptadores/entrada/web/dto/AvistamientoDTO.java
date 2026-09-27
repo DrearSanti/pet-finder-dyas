@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;
+import petfinder.domain.model.TipoAvistamiento;
 import petfinder.domain.model.Ubicacion;
 
 /**
@@ -21,7 +22,14 @@ public record AvistamientoDTO(
         Double longitud,
         String descripcion,
         String nombreContacto,
-        String medioContacto) {
+        String medioContacto,
+        TipoAvistamiento tipo) {
+
+    /** Una pista (LA_VI): la forma del cuerpo antes de existir "La tengo yo". */
+    public AvistamientoDTO(String zona, String referencia, Double latitud, Double longitud,
+                           String descripcion, String nombreContacto, String medioContacto) {
+        this(zona, referencia, latitud, longitud, descripcion, nombreContacto, medioContacto, null);
+    }
 
     /**
      * Crea el avistamiento del dominio con el id y la hora que asigna el
@@ -32,7 +40,7 @@ public record AvistamientoDTO(
         Ubicacion ubicacion = new Ubicacion(zona, referencia, latitud, longitud);
         boolean sinContacto = estaVacio(nombreContacto) && estaVacio(medioContacto);
         Contacto contacto = sinContacto ? null : new Contacto(nombreContacto, medioContacto);
-        return new Avistamiento(id, fechaHora, ubicacion, descripcion, contacto);
+        return new Avistamiento(id, fechaHora, ubicacion, descripcion, contacto, tipo);
     }
 
     private static boolean estaVacio(String valor) {

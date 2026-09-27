@@ -48,7 +48,22 @@ class ClienteModeloAnthropicTest {
     }
 
     @Test
-    @DisplayName("Los doce campos son obligatorios y el modelo no puede inventar otros")
+    @DisplayName("Las coordenadas admiten números o null, nunca texto")
+    void coordenadasNumericasONulas() {
+        // Arrange
+        Map<?, ?> propiedades = (Map<?, ?>) ClienteModeloAnthropic.definicionDelEsquema().get("properties");
+
+        // Act
+        Object latitud = propiedades.get("latitud");
+        Object longitud = propiedades.get("longitud");
+
+        // Assert
+        assertEquals(Map.of("type", List.of("number", "null")), latitud);
+        assertEquals(Map.of("type", List.of("number", "null")), longitud);
+    }
+
+    @Test
+    @DisplayName("Los catorce campos son obligatorios y el modelo no puede inventar otros")
     void camposCerrados() {
         // Arrange
         Map<String, Object> esquema = ClienteModeloAnthropic.definicionDelEsquema();
@@ -58,7 +73,7 @@ class ClienteModeloAnthropicTest {
         Map<?, ?> propiedades = (Map<?, ?>) esquema.get("properties");
 
         // Assert
-        assertEquals(12, requeridos.size());
+        assertEquals(14, requeridos.size());
         assertEquals(List.copyOf(propiedades.keySet()), requeridos);
         assertEquals(false, esquema.get("additionalProperties"));
     }

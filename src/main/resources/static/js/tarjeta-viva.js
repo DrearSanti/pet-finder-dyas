@@ -61,6 +61,7 @@ export function crearTarjetaViva({ tarjeta, textoPregunta, transcripcion, alErro
   let faltantes = [];
   let firma = '';
   let temporizador = null;
+  let revision = 0;
   const filas = new Map();
 
   function tipoActual() {
@@ -197,8 +198,11 @@ export function crearTarjetaViva({ tarjeta, textoPregunta, transcripcion, alErro
 
   /** Una frase (dicha o escrita) va al asistente y devuelve lo que entendió. Lanza ErrorApi si el servidor falla. */
   async function enviarFrase(texto) {
+    const revisionDelTurno = revision;
     const previo = borrador;
     const respuesta = await turnoAsistente(borrador, texto);
+    // Un turno de un reporte anterior no debe llenar el que la persona acaba de abrir.
+    if (revisionDelTurno !== revision) return null;
     aplicar(respuesta, previo);
     mostrarTranscripcion(texto, true);
     return respuesta;
@@ -218,13 +222,15 @@ export function crearTarjetaViva({ tarjeta, textoPregunta, transcripcion, alErro
   }
 
   async function refrescar() {
+    const revisionDelTurno = revision;
     try {
       const respuesta = await turnoAsistente(borrador, '');
+      if (revisionDelTurno !== revision) return;
       faltantes = respuesta.faltantes || [];
       pregunta = respuesta.pregunta || '';
       textoPregunta.textContent = pregunta;
     } catch (error) {
-      alError(error.message);
+      if (revisionDelTurno === revision) alError(error.message);
     }
   }
 
@@ -269,6 +275,7 @@ export function crearTarjetaViva({ tarjeta, textoPregunta, transcripcion, alErro
   }
 
   function restablecer() {
+    revision += 1;
     clearTimeout(temporizador);
     borrador = { ...VACIO };
     faltantes = [];
