@@ -3,7 +3,7 @@
 Diseño y Arquitectura de Software · Universidad de La Sabana
 Equipo: Santiago Escobar, Antonio Benítez, Mateo Ramírez
 
-Cada número de este documento sale de un reporte del repositorio: Surefire y Failsafe (`target/surefire-reports/`, `target/failsafe-reports/`), JaCoCo (`target/site/jacoco/`) y k6 (`perf/resultados/`). Los de pruebas y cobertura son de `./mvnw clean verify` corrido el 2026-09-26 sobre `main`. Lo que no se midió o no se logró se dice en la sección 7.
+Cada número de este documento sale de un reporte del repositorio: Surefire y Failsafe (`target/surefire-reports/`, `target/failsafe-reports/`), JaCoCo (`target/site/jacoco/`) y k6 (`perf/resultados/`). Los de pruebas y cobertura son de `./mvnw clean -Pui verify` corrido el 2026-09-27 sobre `main` (commit `bd67f12`). Lo que no se midió o no se logró se dice en la sección 7.
 
 ## 1. Descripción del sistema y resumen de lo entregado en el primer corte
 
@@ -33,12 +33,15 @@ Cada número de este documento sale de un reporte del repositorio: Surefire y Fa
 
 | Reto | Atributo de calidad | Decisión arquitectónica | Dónde está | Prueba que lo evidencia | Resultado |
 |---|---|---|---|---|---|
-| Menú interactivo | Usabilidad y modificabilidad | La web es un adaptador de entrada más: los controladores solo conocen puertos de entrada | `adaptadores/entrada/web/` (`ReporteController`, `AvistamientoController`), `static/index.html`, `static/js/app.js` | `ControladoresWebTest`, `FlujoReportePerdidaSistemaIT` | 16 de 16 y 6 de 6 en verde. Ciclo completo por HTTP: 201 → ACTIVO → 201 → 204 → RESUELTO → 409; errores 400, 404 y 409 con `{"error": …}` |
+| Menú interactivo | Usabilidad y modificabilidad | La web es un adaptador de entrada más: los controladores solo conocen puertos de entrada | `adaptadores/entrada/web/` (`ReporteController`, `AvistamientoController`), `static/index.html`, `static/js/app.js` | `ControladoresWebTest`, `FlujoReportePerdidaSistemaIT` | 17 de 17 y 6 de 6 en verde. Ciclo completo por HTTP: 201 → ACTIVO → 201 → 204 → RESUELTO → 409; errores 400, 404 y 409 con `{"error": …}` |
 | Menú interactivo: **mapa con coordenadas**. *Funcionalidad agregada porque el reto la exige*: el menú interactivo pide ver los casos cercanos, y eso necesita ubicarlos | Usabilidad y privacidad | `Ubicacion` gana latitud y longitud opcionales y juntas; la lista pública las redondea con `aproximada()` | `domain/model/Ubicacion.java`, `static/js/mapa.js` | `UbicacionTest`, `FlujoReportePerdidaSistemaIT.listaEnmascaraYDetalleNo` | 10 de 10 en verde; la lista publica coordenadas a 3 decimales (unos 100 m) y el contacto enmascarado (`300•••••67`) |
+| Menú interactivo: **Cerca de ti**. *Funcionalidad agregada porque el reto la exige*: el menú interactivo pide ver los casos cercanos; "Mi ubicación" filtra los que están a menos de 5 km | Usabilidad y privacidad | El filtro y la distancia se calculan en el navegador; la posición de la persona nunca se envía al servidor | `static/js/app.js`, `static/js/mapa.js` | Sin prueba automática; se verifica a mano en la demo | **Resuelto con un límite:** falta una prueba de interfaz que lo cubra (sección 7) |
+| Menú interactivo: **La tengo yo** y **Ya apareció**. *Funcionalidad agregada porque el reto la exige*: el menú lleva al navegador las operaciones del Corte 1; avisar que alguien tiene la mascota es una variante del avistamiento, y "Ya apareció" usa el `resolver()` que ya existía | Usabilidad y seguridad | `Avistamiento` gana `TipoAvistamiento` (`LA_VI`, `LA_TENGO`); un hallazgo exige contacto y el caso sigue activo hasta que la familia confirma | `domain/model/Avistamiento.java`, `domain/model/TipoAvistamiento.java`, `ReportePerdida.laTieneAlguien()` | `HallazgoTest`, `FlujoHallazgoSistemaIT` | 3 de 3 y 3 de 3 en verde; "La tengo yo" sin contacto responde 400 y no toca el caso |
+| Menú interactivo: **posibles coincidencias**. *Funcionalidad agregada*, con relación indirecta al reto: al reportar un hallazgo, la interfaz sugiere hasta 3 casos perdidos por nombre, o por especie y cercanía | Usabilidad | Heurística en el navegador; solo sugiere y la persona decide | `static/js/app.js` (`posiblesCoincidencias`) | Sin prueba automática | **Declarado como límite:** el plan del corte la había dejado fuera de alcance y no hay prueba que la respalde (sección 7) |
 | Captura de voz | Rendimiento | El servidor solo recibe texto; `InterpreteComandoVoz` usa reglas (regex) y no un modelo, para responder en microsegundos | `adaptadores/entrada/web/VozController.java`, `application/service/InterpreteComandoVoz.java`, `ServicioComandosVoz.java` | k6 `perf/scripts/carga.js` (50 usuarios, 4 min 30 s) | **Cumple el SLO**: p95 de 89,2 ms (objetivo ≤ 500 ms), 0 % de errores en 21.442 peticiones (objetivo < 1 %), 79,2 req/s (objetivo ≥ 30) |
 | Captura de voz | Modificabilidad | La voz publica por `GestionReportes`, el mismo puerto que el formulario y la consola | `application/port/entrada/ProcesadorComandosVoz.java`, `config/ConfiguracionPetFinder.java` | `FlujoVozSistemaIT`, `InterpreteComandoVozTest`, `ServicioComandosVozTest` | 4 de 4, 26 de 26 y 5 de 5 en verde. "Max, perro, Chía" por formulario, voz y asistente produce el mismo reporte. **Resuelto con un límite:** la transcripción depende de Web Speech, así que la voz solo funciona en Chrome y Edge y con internet; en otros navegadores la misma frase se escribe en el campo de texto. Faltaría transcribir en el servidor, que se descartó para no procesar audio (sección 7) |
-| Captura de voz: **asistente con tarjeta viva**. *Funcionalidad agregada porque el reto la exige*: la captura de voz necesita completar por turnos lo que una sola frase no dice | Disponibilidad y seguridad | Puerto `ExtractorDatosReporte` con dos adaptadores (Claude primero, regex de respaldo); el asistente no recibe `GestionReportes`, así que nunca publica | `application/service/ServicioAsistente.java`, `adaptadores/salida/ia/ExtractorClaude.java`, `application/service/ExtractorRegex.java`, `static/js/tarjeta-viva.js` | `ServicioAsistenteTest`, `ExtractorRegexTest`, `ExtractorClaudeTest` | 15 de 15, 26 de 26 y 31 de 31 en verde, sin llamar a Claude. `git diff step-14-h2-integrado step-15-extractor-claude --stat -- src/main/java/petfinder/domain` sale vacío |
-| Los dos retos | Modificabilidad y testabilidad | Arquitectura hexagonal verificada con ArchUnit ([ADR-001](adr/ADR-001-estilo-arquitectonico.md)) | `test/.../arquitectura/ReglasArquitecturaTest.java` | `ReglasArquitecturaTest` y JaCoCo | 5 de 5 reglas en verde. Cobertura total: 79,6 % de instrucciones y 80,4 % de ramas; paquete `domain`: 96,8 % y 86,5 % |
+| Captura de voz: **asistente con tarjeta viva**. *Funcionalidad agregada porque el reto la exige*: la captura de voz necesita completar por turnos lo que una sola frase no dice | Disponibilidad y seguridad | Puerto `ExtractorDatosReporte` con dos adaptadores (Claude primero, regex de respaldo); el asistente no recibe `GestionReportes`, así que nunca publica | `application/service/ServicioAsistente.java`, `adaptadores/salida/ia/ExtractorClaude.java`, `application/service/ExtractorRegex.java`, `static/js/tarjeta-viva.js` | `ServicioAsistenteTest`, `ExtractorRegexTest`, `ExtractorClaudeTest` | 15 de 15, 26 de 26 y 45 de 45 en verde, sin llamar a Claude. Las coordenadas que Claude sugiere para un lugar nombrado se descartan si caen fuera de Colombia. `git diff step-14-h2-integrado step-15-extractor-claude --stat -- src/main/java/petfinder/domain` sale vacío |
+| Los dos retos | Modificabilidad y testabilidad | Arquitectura hexagonal verificada con ArchUnit ([ADR-001](adr/ADR-001-estilo-arquitectonico.md)) | `test/.../arquitectura/ReglasArquitecturaTest.java` | `ReglasArquitecturaTest` y JaCoCo | 5 de 5 reglas en verde. Cobertura total: 83,1 % de instrucciones y 83,3 % de ramas; paquete `domain`: 97,0 % y 87,3 % |
 
 ## 3. Comparación de estilos y ADR de la decisión
 
@@ -80,7 +83,7 @@ La estrategia completa, con la matriz de clases de equivalencia y valores límit
 | Capa web | Cada controlador: códigos HTTP, JSON y errores | Levanta solo la web con los puertos simulados | `@WebMvcTest` |
 | Integración | El adaptador H2 y un caso de uso completo sobre la base real | Un doble no detecta un mapeo JPA mal hecho | `@DataJpaTest`, `@SpringBootTest` |
 | Sistema | La app completa por HTTP, sin dobles | Es la única prueba que demuestra que los tres canales producen el mismo reporte | `@SpringBootTest(RANDOM_PORT)` |
-| Interfaz (opcional, con bonificación) | Dos flujos en Chrome | Probar lo que ve la persona | Selenium (pendiente, ver sección 7) |
+| Interfaz (opcional, con bonificación) | Dos flujos en Chrome | Probar lo que ve la persona | Selenium, con Page Objects y esperas explícitas |
 | Carga | Latencia, errores y throughput en la hora pico de reportes por voz | El reto de voz se liga al rendimiento; el SLO se fijó antes de medir | k6 |
 
 Técnicas usadas: clases de equivalencia (por ejemplo, nulo, vacío y solo espacios en cada dato obligatorio), valores límite (200 y 201 caracteres de una frase de voz, −90 y 90,0001 de latitud, `PF-999` → `PF-1000`) y tabla de decisión (las 9 transiciones de estado).
@@ -89,14 +92,15 @@ Técnicas usadas: clases de equivalencia (por ejemplo, nulo, vacío y solo espac
 
 ### Pruebas automatizadas
 
-`./mvnw clean verify` del 2026-09-26 sobre `main`:
+`./mvnw clean -Pui verify` del 2026-09-27 sobre `main` (commit `bd67f12`):
 
 | Nivel | Pruebas | Pasan | Reporte |
 |---|---|---|---|
-| Unitarias + arquitectura + capa web (`*Test`) | 196 | 196 | `target/surefire-reports/` |
+| Unitarias + arquitectura + capa web (`*Test`) | 227 | 227 | `target/surefire-reports/` |
 | Integración con H2 (`DatosDeEjemploIT` 1, `RepositorioReportesH2IT` 7, `ServicioReportesH2IT` 3) | 11 | 11 | `target/failsafe-reports/` |
-| Sistema por HTTP (`FlujoReportePerdidaSistemaIT` 6, `FlujoVozSistemaIT` 4) | 10 | 10 | `target/failsafe-reports/` |
-| **Total** | **217** | **217** | |
+| Sistema por HTTP (`FlujoReportePerdidaSistemaIT` 6, `FlujoVozSistemaIT` 4, `FlujoHallazgoSistemaIT` 3) | 13 | 13 | `target/failsafe-reports/` |
+| Interfaz con Selenium (`FlujosPrincipalesUIT`, perfil `-Pui`) | 2 | 2 | `target/failsafe-reports/` |
+| **Total** | **253** | **253** | |
 
 Las pruebas encontraron dos defectos que se corrigieron sin relajar ninguna aserción (detalle en `docs/pruebas.md`): la voz perdía las tildes de la zona ("Chía" llegaba como "Chia"; corregido en el PR #19) y las rutas con `{id}` respondían 500 si el IDE recompilaba sin `-parameters`.
 
@@ -104,8 +108,8 @@ Las pruebas encontraron dos defectos que se corrigieron sin relajar ninguna aser
 
 | Alcance | Instrucciones | Ramas |
 |---|---|---|
-| Todo el proyecto | 79,6 % | 80,4 % |
-| Paquete `domain` | 96,8 % | 86,5 % |
+| Todo el proyecto | 83,1 % | 83,3 % |
+| Paquete `domain` | 97,0 % | 87,3 % |
 
 Reporte: `target/site/jacoco/index.html`.
 
@@ -136,7 +140,8 @@ SLO fijado antes de correr (commit de E3-T1): p95 ≤ 500 ms, errores < 1 %, al 
 | **Sin cuentas ni permisos** | Fuera de alcance del corte | Cualquiera puede resolver o cerrar un caso |
 | **La voz por reglas es rígida** | Se eligió regex por velocidad y costo (ADR-002) | Una frase fuera de las cuatro formas responde 422 con una sugerencia |
 | **El asistente con Claude depende de una clave y tiene costo** | Servicio externo | Sin clave o sobre el tope diario responde la regex, que entiende menos |
-| **Pruebas de interfaz con Selenium pendientes** | Son opcionales en el enunciado (bonificación de +5) y la tarea E2-T6 no estaba terminada al cerrar este documento | No hay prueba automática de los flujos en el navegador |
+| **"Cerca de ti" y las posibles coincidencias no tienen prueba automática** | Se agregaron al final del corte | Se verifican a mano; Selenium cubre solo publicar un reporte y reportar un avistamiento |
+| **Las posibles coincidencias contradicen el plan del corte** | El plan dejó fuera las coincidencias pérdida ↔ hallazgo porque necesitan datos e imágenes que no existen | Es solo una sugerencia por nombre, especie y cercanía: puede proponer un caso equivocado, y decidir es de la persona |
 | **Una sola corrida de carga**, con k6 y la app en la misma máquina | Tiempo del corte | Los números son indicativos, no un promedio de repeticiones |
 | **Despliegue en Render sin evidencia en el repositorio** | Estaba en el plan del corte | No hay una URL pública verificada; la demo corre desde un computador del equipo |
 
@@ -147,4 +152,4 @@ SLO fijado antes de correr (commit de E3-T1): p95 ≤ 500 ms, errores < 1 %, al 
 3. **Paginación en `GET /api/reportes` y `JOIN FETCH`** de avistamientos, para quitar el cuello de botella medido.
 4. **Cuentas y permisos** para que solo quien publicó pueda resolver o cerrar su caso.
 5. **Fotos** de referencia y de avistamiento con almacenamiento externo, después de las cuentas.
-6. Terminar las **pruebas de interfaz con Selenium** (opcionales en este corte) si no entran antes de la entrega.
+6. Cubrir con Selenium **"Cerca de ti" y las posibles coincidencias**, o retirarlas si no se pueden probar.
