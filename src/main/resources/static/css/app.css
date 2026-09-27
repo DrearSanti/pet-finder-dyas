@@ -101,6 +101,7 @@ h1, h2, h3, p { margin:0; }
 .filtro { padding:7px 12px; min-height:36px; border:0; border-radius:var(--radio-pildora); background:var(--color-superficie-2); font:500 .8125rem var(--fuente-ui); color:var(--color-texto-2); cursor:pointer; }
 .filtro.on { background:var(--color-tinta); color:var(--color-sobre-tinta); }
 .fila-titulo { display:flex; align-items:baseline; gap:8px; }
+.fila-titulo .ver-todos { margin-left:auto; padding:0; font-size:.9375rem; }
 .titulo-seccion { font:600 1.25rem var(--fuente-ui); letter-spacing:-.03em; }
 .lista-casos { display:flex; flex-direction:column; gap:4px; }
 .caso { display:flex; gap:12px; align-items:center; padding:10px; border-radius:18px; text-decoration:none; color:inherit; }
@@ -170,7 +171,14 @@ h1, h2, h3, p { margin:0; }
 
 /* ===== Mapa ===== */
 .mapa-aviso { position:absolute; left:16px; right:16px; top:50%; transform:translateY(-50%); z-index:1; text-align:center; color:var(--color-texto-2); font-size:.9375rem; }
-.mapa-mini { position:relative; height:200px; border-radius:var(--radio-tarjeta); overflow:hidden; isolation:isolate; background:var(--color-superficie-2); }
+/* Alto relativo a la pantalla: con 200 px fijos había que arrastrar mucho para llegar al punto. */
+.mapa-mini { position:relative; height:clamp(240px, 42vh, 380px); border-radius:var(--radio-tarjeta); overflow:hidden; isolation:isolate; background:var(--color-superficie-2); }
+/* Mi ubicación: botón redondo de vidrio con la flecha en acento (DESIGN.md §7). Presionado = "Cerca de ti" activo. */
+.boton-ubicacion { width:44px; height:44px; padding:0; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--color-acento); cursor:pointer; font:inherit; }
+.boton-ubicacion svg { width:20px; height:20px; }
+.boton-ubicacion[aria-pressed="true"] { background:var(--color-acento); color:var(--color-superficie); }
+.boton-ubicacion[aria-busy="true"] { opacity:.6; cursor:progress; }
+.pin-yo { border-radius:50%; background:var(--color-acento); border:3px solid var(--color-superficie); box-shadow:0 0 0 8px color-mix(in srgb, var(--color-acento) 18%, transparent), var(--sombra-flotante); }
 .leaflet-container { font-family:var(--fuente-ui); background:var(--color-superficie-2); }
 .leaflet-container .leaflet-control-attribution { background:var(--vidrio); color:var(--color-texto-2); }
 .leaflet-container .leaflet-control-attribution a { color:var(--color-texto-2); }
@@ -208,6 +216,9 @@ h1, h2, h3, p { margin:0; }
 .pista i { width:10px; height:10px; border-radius:50%; background:var(--estado-avistamiento); flex:none; }
 .pista b { display:block; font:500 .9375rem var(--fuente-ui); }
 .pista span { font:400 .8125rem var(--fuente-ui); color:var(--color-texto-3); }
+/* Cerrar el caso: enlace discreto y confirmación en línea sobre superficie-2, sin sombra (DESIGN.md §5 y §8). */
+.btn-cierre { align-self:center; }
+.confirmacion { display:flex; flex-direction:column; gap:10px; background:var(--color-superficie-2); border-radius:var(--radio-tarjeta); padding:16px; }
 
 /* ===== Publicado ===== */
 .vista-publicado { align-items:center; justify-content:center; text-align:center; gap:22px; min-height:70vh; }
@@ -231,6 +242,11 @@ h1, h2, h3, p { margin:0; }
   .app[data-hoja="lista"] .col-izq { max-height:80dvh; }
   .agarradera { display:block; width:36px; height:5px; border-radius:3px; background:color-mix(in srgb, var(--color-texto-3) 45%, transparent); align-self:center; flex:none; }
   .col-izq .cabecera, .buscador-lista, .filtros, .btn-nuevo { display:none; }
+  /* Con la lista abierta (pestaña Casos) sí caben el buscador y los filtros. */
+  .app[data-hoja="lista"] .buscador-lista, .app[data-hoja="lista"] .filtros { display:flex; }
+  /* Los controles del mapa (Mi ubicación y la atribución) van justo encima de la hoja; app.js mide su alto. */
+  .col-mapa .leaflet-bottom { bottom:var(--alto-hoja, 0px); }
+  .app[data-hoja="lista"] .col-mapa .leaflet-bottom { display:none; }
   .app:not([data-hoja="lista"]) .lista-casos { flex-direction:row; overflow-x:auto; margin-right:-20px; gap:12px; padding-bottom:4px; }
   .app:not([data-hoja="lista"]) .caso { flex:none; flex-direction:column; align-items:stretch; width:176px; padding:8px 8px 14px; border-radius:24px; background:var(--color-superficie-2); gap:10px; }
   .app:not([data-hoja="lista"]) .caso .mini { width:100%; height:96px; border-radius:var(--radio-foto); }
@@ -253,6 +269,7 @@ h1, h2, h3, p { margin:0; }
   .pin::after { background:var(--color-tinta); }
   .mic.escuchando { color:var(--color-tinta); }
   .vidrio { border-color:var(--color-borde); }
+  .pin-yo { border-color:var(--color-tinta); }
 }
 :root[data-tema="oscuro"] .marca { filter:invert(1); }
 :root[data-tema="oscuro"] .pregunta .marca { filter:none; }
@@ -260,5 +277,6 @@ h1, h2, h3, p { margin:0; }
 :root[data-tema="oscuro"] .pin::after { background:var(--color-tinta); }
 :root[data-tema="oscuro"] .mic.escuchando { color:var(--color-tinta); }
 :root[data-tema="oscuro"] .vidrio { border-color:var(--color-borde); }
+:root[data-tema="oscuro"] .pin-yo { border-color:var(--color-tinta); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }

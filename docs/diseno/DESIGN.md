@@ -184,6 +184,8 @@ Regla: una tarjeta **o** tiene sombra **o** está sobre un fondo de otro tono, n
 | Resueltos | No se muestran por defecto. Filtro "Mostrar resueltos" en verde |
 | Privacidad | Coordenadas públicas redondeadas a 3 decimales (≈ 100 m). Nunca la dirección exacta ni el teléfono en el mapa |
 | Controles | Flotan en vidrio: buscador arriba y botón "Mi ubicación" abajo a la derecha, sobre la hoja |
+| Cerca de ti | "Mi ubicación" en el mapa principal activa "Cerca de ti": casos a menos de 5 km, del más cercano al más lejano, con la distancia en cada tarjeta ("a 1,2 km") y el punto "Estás aquí" en acento. Se apaga con el mismo botón (presionado = relleno de acento) o con "Ver todos". La posición no sale del navegador |
+| Mapas pequeños | El mismo botón "Mi ubicación" pone el pin donde está la persona, que solo lo ajusta si hace falta. Alto relativo a la pantalla (entre 240 y 380 px) |
 
 ---
 
@@ -204,6 +206,7 @@ Regla: una tarjeta **o** tiene sombra **o** está sobre un fondo de otro tono, n
 | **Hoja inferior** | `--radio-hoja` arriba, agarradera de 36 × 5 px, `--sombra-hoja` |
 | **Control segmentado** | Píldora Perla con opción activa en blanco ("Hablar / Escribir", "Mapa / Lista") |
 | **Aviso (toast)** | Píldora Tinta arriba, 3 s, texto 15/500. Errores con el punto de estado Perdida |
+| **Confirmación en línea** | Bloque `--color-superficie-2` con `--radio-tarjeta`, sin sombra: pregunta en título 2, consecuencia en pie y dos acciones, la primaria con el verbo ("Sí, ya apareció") y "Cancelar" en texto. Mientras está abierta reemplaza a las acciones de la vista, así sigue habiendo un solo botón primario. Nunca `confirm()` |
 
 Estados de interacción: al presionar, escala 0.97; foco visible con anillo de 2 px del acento a 2 px de distancia; deshabilitado se evita: se deja activo y se explica qué falta.
 
@@ -234,7 +237,7 @@ Vistas del producto (todas en [`vistas.html`](vistas.html)):
 |---|---|
 | Inicio | Mapa con pines por estado, buscador de vidrio, hoja "Cerca de ti" con carrusel de tarjetas, barra de pestañas |
 | Nuevo reporte | Control "Hablar / Escribir", titular editorial, transcripción coloreada, tarjeta viva, pregunta del asistente, micrófono y "Revisar y publicar" |
-| Detalle del caso | Foto principal, etiqueta de estado con `PF-###`, nombre en display, tres datos, pistas de la comunidad, "La vi" y "Compartir" |
+| Detalle del caso | Foto principal, etiqueta de estado con `PF-###`, nombre en display, tres datos, pistas de la comunidad, "La vi" y "Compartir", y el enlace "Ya apareció" ("Ya volvió a casa" en un hallazgo) que abre la confirmación en línea. Un caso resuelto se muestra con la etiqueta "Resuelto" y sin acciones |
 | Reportar avistamiento | Tarjeta viva corta (Dónde, Cuándo, Qué viste, Contacto opcional) sobre un mini mapa |
 | Publicado | Confirmación con la marca animada, identificador y acceso a compartir |
 
