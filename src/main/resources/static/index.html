@@ -45,8 +45,9 @@
       <button type="button" class="filtro" data-filtro="ENCONTRADA" aria-pressed="false">Encontradas</button>
     </div>
     <div class="fila-titulo">
-      <h2 class="titulo-seccion">Casos activos</h2>
+      <h2 class="titulo-seccion" data-rol="titulo-lista">Casos activos</h2>
       <span class="meta" data-rol="cuenta"></span>
+      <button type="button" class="btn btn-texto ver-todos" data-rol="ver-todos" hidden>Ver todos</button>
     </div>
     <div class="lista-casos" data-prueba="lista-casos"></div>
     <button type="button" class="btn btn-nuevo" data-prueba="boton-nuevo-reporte">Nuevo reporte</button>
@@ -94,7 +95,7 @@
       </div>
       <div class="ubicacion">
         <span class="nombre">¿Dónde fue?</span>
-        <p class="meta">Toca el mapa para poner el pin. Así el caso aparece donde corresponde.</p>
+        <p class="meta">Toca el mapa para poner el pin, o la flecha para usar tu ubicación. Así el caso aparece donde corresponde.</p>
         <div class="mapa-mini" data-prueba="mapa-reporte"></div>
       </div>
       <button type="button" class="btn btn-primario" data-prueba="boton-publicar">Publicar reporte</button>
@@ -124,9 +125,19 @@
         <div class="lista-pistas" data-rol="caso-pistas"></div>
       </div>
       <p class="meta" data-rol="caso-contacto"></p>
-      <div class="fila">
+      <div class="fila" data-rol="acciones-caso">
         <button type="button" class="btn btn-primario ancho" data-prueba="boton-la-vi">La vi</button>
         <button type="button" class="btn btn-secundario" data-rol="compartir">Compartir</button>
+      </div>
+      <!-- Cerrar el caso: la confirmación reemplaza a las acciones para que siga habiendo un solo botón primario -->
+      <button type="button" class="btn btn-texto btn-cierre" data-prueba="boton-resolver">Ya apareció</button>
+      <div class="confirmacion" data-rol="confirmar-cierre" hidden>
+        <p class="nombre" data-rol="pregunta-cierre">¿Ya está en casa?</p>
+        <p class="meta">El caso queda resuelto y sale del mapa y de la lista. No se puede deshacer.</p>
+        <div class="fila">
+          <button type="button" class="btn btn-primario ancho" data-prueba="boton-confirmar-resolver">Sí, ya apareció</button>
+          <button type="button" class="btn btn-texto" data-rol="cancelar-cierre">Cancelar</button>
+        </div>
       </div>
     </section>
 
@@ -137,7 +148,7 @@
       </div>
       <h2 class="titular" data-rol="pista-titulo"></h2>
       <div class="mapa-mini" data-prueba="mapa-avistamiento"></div>
-      <p class="meta">Toca el mapa para marcar dónde la viste. Puedes arrastrar el pin si hace falta.</p>
+      <p class="meta">Toca el mapa para marcar dónde la viste, o la flecha si estás ahí. Puedes arrastrar el pin si hace falta.</p>
       <div class="tarjeta-viva">
         <label class="campo"><i class="pt pt-resuelto"></i><span class="k">Dónde</span>
           <input class="v" data-rol="pista-zona" aria-label="Dónde la viste" placeholder="Falta" autocomplete="off"></label>

@@ -3,10 +3,12 @@
 // se inserta con textContent: nunca con innerHTML.
 
 import {
-  ErrorApi, listarReportes, consultarReporte, registrarAvistamiento,
+  ErrorApi, listarReportes, consultarReporte, registrarAvistamiento, resolverReporte,
 } from './api.js';
 import { crearTarjetaViva } from './tarjeta-viva.js';
-import { hayMapa, crearMapa, crearSelector } from './mapa.js';
+import {
+  hayMapa, crearMapa, crearSelector, obtenerUbicacion, distanciaKm,
+} from './mapa.js';
 import {
   soportaVoz, iniciarCaptura, detenerCaptura, capturando,
 } from './voz.js';
@@ -20,6 +22,20 @@ const panel = (nombre) => document.querySelector(`[data-vista-panel="${nombre}"]
 
 const ETIQUETA_TIPO = { PERDIDA: 'Perdida', ENCONTRADA: 'Encontrada' };
 const CLASE_TIPO = { PERDIDA: 'perdida', ENCONTRADA: 'encontrada' };
+const ETIQUETA_CERRADO = { RESUELTO: 'Resuelto', CERRADO: 'Cerrado' };
+// "Cerca de ti" (DESIGN.md §7): radio alrededor de la posición de la persona.
+const RADIO_KM = 5;
+// Las palabras de cerrar un caso cambian según quién lo publicó: la dueña o quien la encontró.
+const TEXTOS_CIERRE = {
+  PERDIDA: {
+    enlace: 'Ya apareció', pregunta: '¿Ya está en casa?', confirmar: 'Sí, ya apareció',
+    listo: 'Qué bueno que apareció. El caso quedó resuelto.',
+  },
+  ENCONTRADA: {
+    enlace: 'Ya volvió a casa', pregunta: '¿Ya volvió con su familia?', confirmar: 'Sí, ya volvió',
+    listo: 'Qué bueno que volvió a casa. El caso quedó resuelto.',
+  },
+};
 const PATA = '<svg viewBox="0 0 200 200" fill="currentColor" aria-hidden="true"><circle cx="44" cy="92" r="17"/>'
   + '<circle cx="76" cy="56" r="19"/><circle cx="124" cy="56" r="19"/><circle cx="156" cy="92" r="17"/>'
   + '<ellipse cx="100" cy="138" rx="44" ry="36"/></svg>';
@@ -34,6 +50,8 @@ let rutaEnCurso = 0;
 let mapa = null;
 let selector = null;
 let microfonoActivo = null;
+// {latitud, longitud} mientras "Cerca de ti" está activo; null muestra todos los casos.
+let miPosicion = null;
 
 /* ---------- Utilidades ---------- */
 
@@ -110,14 +128,31 @@ function paraComparar(texto) {
   return String(texto).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 }
 
+function tieneCoordenadas(caso) {
+  return typeof caso.latitud === 'number' && typeof caso.longitud === 'number';
+}
+
+/** Distancia a la persona; un caso sin coordenadas queda infinitamente lejos y no entra en "Cerca de ti". */
+function distanciaA(caso) {
+  return miPosicion && tieneCoordenadas(caso) ? distanciaKm(miPosicion, caso) : Infinity;
+}
+
+function formatearDistancia(km) {
+  if (km < 1) return `a ${Math.max(50, Math.round((km * 1000) / 50) * 50)} m`;
+  return `a ${km.toFixed(1).replace('.', ',')} km`;
+}
+
 function casosFiltrados() {
   const texto = paraComparar(busqueda.trim());
-  return casos.filter((caso) => {
+  const visibles = casos.filter((caso) => {
     if (filtro !== 'todos' && caso.tipo !== filtro) return false;
+    if (miPosicion && distanciaA(caso) > RADIO_KM) return false;
     if (!texto) return true;
     return [tituloDe(caso), caso.zona, caso.especie, caso.descripcionMascota]
       .some((campo) => !vacio(campo) && paraComparar(campo).includes(texto));
   });
+  // Cerca de ti: del más cercano al más lejano. Sin posición, el orden del servidor (el más reciente primero).
+  return miPosicion ? visibles.sort((a, b) => distanciaA(a) - distanciaA(b)) : visibles;
 }
 
 function crearTarjetaCaso(caso) {
@@ -131,23 +166,33 @@ function crearTarjetaCaso(caso) {
   const pistas = caso.cantidadAvistamientos > 0
     ? ` · ${caso.cantidadAvistamientos} ${caso.cantidadAvistamientos === 1 ? 'pista' : 'pistas'}`
     : '';
+  const distancia = miPosicion ? ` · ${formatearDistancia(distanciaA(caso))}` : '';
   const texto = el('div', 't');
   texto.append(
     el('span', 'nombre', tituloDe(caso)),
-    el('span', 'meta', `${caso.zona} · ${haceCuanto(caso.fechaCreacion)}${pistas}`),
+    el('span', 'meta', `${caso.zona}${distancia} · ${haceCuanto(caso.fechaCreacion)}${pistas}`),
   );
   enlace.append(foto, texto, el('span', `estado ${clase}`, ETIQUETA_TIPO[caso.tipo] || 'Caso'));
   return enlace;
 }
 
+function mensajeListaVacia() {
+  if (casos.length === 0) return 'Aún no hay casos cerca. Si viste una mascota, cuéntanos.';
+  if (miPosicion && vacio(busqueda) && filtro === 'todos') {
+    return `Aún no hay casos a menos de ${RADIO_KM} km. Si viste una mascota, cuéntanos.`;
+  }
+  return 'Ningún caso coincide con tu búsqueda.';
+}
+
 function pintarLista() {
   const lista = porPrueba('lista-casos');
   const visibles = casosFiltrados();
-  porRol('cuenta').textContent = `${visibles.length} ${visibles.length === 1 ? 'activo' : 'activos'}`;
+  porRol('titulo-lista').textContent = miPosicion ? 'Cerca de ti' : 'Casos activos';
+  porRol('cuenta').textContent = `${visibles.length} ${visibles.length === 1 ? 'activo' : 'activos'}`
+    + (miPosicion ? ` · ${RADIO_KM} km` : '');
+  porRol('ver-todos').hidden = !miPosicion;
   if (visibles.length === 0) {
-    lista.replaceChildren(el('p', 'vacio', casos.length === 0
-      ? 'Aún no hay casos cerca. Si viste una mascota, cuéntanos.'
-      : 'Ningún caso coincide con tu búsqueda.'));
+    lista.replaceChildren(el('p', 'vacio', mensajeListaVacia()));
   } else {
     lista.replaceChildren(...visibles.map(crearTarjetaCaso));
   }
@@ -176,7 +221,80 @@ function iniciarMapa() {
   mapa = crearMapa(porPrueba('mapa'), {
     alElegirCaso: (id) => navegar(`#/caso/${encodeURIComponent(id)}`),
     conZoom: window.matchMedia('(min-width: 768px)').matches,
+    alTocarUbicacion: alternarCercania,
+    // En el celular la hoja de casos tapa la parte de abajo del mapa.
+    altoTapado: () => (window.matchMedia('(max-width: 767px)').matches
+      ? document.querySelector('.col-izq').offsetHeight : 0),
   });
+  mapa.botonUbicacion().setAttribute('aria-pressed', 'false');
+}
+
+/* ---------- Cerca de ti ---------- */
+
+/** El botón "Mi ubicación" del mapa prende y apaga "Cerca de ti". */
+async function alternarCercania() {
+  if (miPosicion) {
+    verTodos();
+    return;
+  }
+  const boton = mapa ? mapa.botonUbicacion() : null;
+  if (boton) boton.setAttribute('aria-busy', 'true');
+  try {
+    miPosicion = await obtenerUbicacion();
+    if (boton) boton.setAttribute('aria-pressed', 'true');
+    pintarLista();
+    if (mapa) mapa.mostrarUbicacion(miPosicion, casosFiltrados());
+  } catch (error) {
+    mostrarMensaje(error.message, true);
+  } finally {
+    if (boton) boton.removeAttribute('aria-busy');
+  }
+}
+
+function verTodos() {
+  miPosicion = null;
+  if (mapa) {
+    mapa.quitarUbicacion();
+    mapa.botonUbicacion().setAttribute('aria-pressed', 'false');
+  }
+  pintarLista();
+  if (mapa) mapa.encuadrarTodo(casosFiltrados());
+}
+
+/* ---------- Barra de pestañas (celular) ---------- */
+
+/** Explorar y Casos se excluyen: se marca la que corresponde a si la hoja está abierta como lista. */
+function marcarPestanas() {
+  const lista = aplicacion.dataset.hoja === 'lista';
+  porRol('pestana-casos').setAttribute('aria-pressed', String(lista));
+  porRol('pestana-explorar').classList.toggle('on', !lista);
+}
+
+/**
+ * Explorar enlaza a #/, así que desde el inicio no disparaba ningún cambio de ruta y el toque
+ * parecía no hacer nada. Ahora cierra la lista, vuelve al principio de la hoja y encuadra el mapa.
+ */
+function explorar(evento) {
+  evento.preventDefault();
+  if (aplicacion.dataset.vista !== 'inicio') {
+    navegar('#/');
+    return;
+  }
+  aplicacion.dataset.hoja = '';
+  marcarPestanas();
+  document.querySelector('.col-izq').scrollTop = 0;
+  if (!mapa) return;
+  mapa.invalidar();
+  if (miPosicion) mapa.mostrarUbicacion(miPosicion, casosFiltrados());
+  else mapa.encuadrarTodo(casosFiltrados());
+}
+
+/** En el celular la hoja tapa la parte de abajo del mapa: sus controles (y la atribución) van justo encima. */
+function seguirAltoDeHoja() {
+  const hoja = document.querySelector('.col-izq');
+  new ResizeObserver(() => {
+    aplicacion.style.setProperty('--alto-hoja', `${hoja.offsetHeight}px`);
+  }).observe(hoja);
 }
 
 /* ---------- Voz ---------- */
@@ -277,7 +395,9 @@ async function publicarReporte() {
 function montarSelector(nombre, estado, opciones = {}) {
   destruirSelector();
   if (!hayMapa()) return;
-  selector = crearSelector(porPrueba(nombre), { estado, ...opciones });
+  selector = crearSelector(porPrueba(nombre), {
+    estado, alFallarUbicacion: (mensaje) => mostrarMensaje(mensaje, true), ...opciones,
+  });
   selector.invalidar();
 }
 
@@ -306,8 +426,19 @@ function pintarDetalle(caso) {
   porRol('caso-referencia').textContent = vacio(caso.referencia) ? 'Sin dato' : caso.referencia;
   porRol('caso-cuenta').textContent = String(caso.cantidadAvistamientos ?? (caso.avistamientos || []).length);
   porRol('caso-descripcion').textContent = caso.descripcion || '';
+  // Un caso resuelto o cerrado se puede abrir desde un enlace compartido: se muestra, pero sin acciones.
+  const activo = casoActivo(caso);
+  if (!activo) {
+    estado.className = `estado${caso.estado === 'RESUELTO' ? ' resuelto' : ''}`;
+    estado.textContent = ETIQUETA_CERRADO[caso.estado] || 'Cerrado';
+  }
   // Solo una pérdida admite avistamientos; de un hallazgo se habla directamente con quien lo encontró.
-  porPrueba('boton-la-vi').hidden = caso.tipo === 'ENCONTRADA';
+  porPrueba('boton-la-vi').hidden = !activo || caso.tipo === 'ENCONTRADA';
+  const textos = TEXTOS_CIERRE[caso.tipo] || TEXTOS_CIERRE.PERDIDA;
+  porPrueba('boton-resolver').textContent = textos.enlace;
+  porRol('pregunta-cierre').textContent = textos.pregunta;
+  porPrueba('boton-confirmar-resolver').textContent = textos.confirmar;
+  mostrarConfirmacionCierre(false);
   porRol('caso-contacto').textContent = vacio(caso.contacto)
     ? ''
     : `Contacto: ${vacio(caso.nombreContacto) ? '' : `${caso.nombreContacto} · `}${caso.contacto}`;
@@ -327,6 +458,40 @@ function pintarDetalle(caso) {
       fila.append(el('i'), texto);
       return fila;
     }));
+  }
+}
+
+function casoActivo(caso) {
+  return !caso.estado || caso.estado === 'ACTIVO';
+}
+
+/** La confirmación ocupa el lugar de las acciones: así nunca hay dos botones primarios a la vez. */
+function mostrarConfirmacionCierre(abierta) {
+  const activo = casoAbierto ? casoActivo(casoAbierto) : false;
+  porRol('acciones-caso').hidden = abierta;
+  porPrueba('boton-resolver').hidden = abierta || !activo;
+  porRol('confirmar-cierre').hidden = !abierta;
+}
+
+/**
+ * "Ya apareció": marca el caso como resuelto. El dominio ya lo permitía (ACTIVO → RESUELTO) y la API
+ * lo expone en POST /api/reportes/{id}/resolver; solo faltaba el botón. Sin cuentas, cualquiera con el
+ * enlace podría hacerlo: es un límite declarado en docs/arquitectura.md §7.
+ */
+async function resolverCaso() {
+  if (!casoAbierto) return;
+  const boton = porPrueba('boton-confirmar-resolver');
+  const textos = TEXTOS_CIERRE[casoAbierto.tipo] || TEXTOS_CIERRE.PERDIDA;
+  boton.disabled = true;
+  try {
+    await resolverReporte(casoAbierto.id);
+    mostrarMensaje(textos.listo);
+    await cargarCasos(true);
+    navegar('#/');
+  } catch (error) {
+    mostrarError(error);
+  } finally {
+    boton.disabled = false;
   }
 }
 
@@ -449,7 +614,7 @@ function enrutar() {
     panel(nombre).hidden = nombre !== vista;
   }
   aplicacion.dataset.hoja = '';
-  porRol('pestana-casos').setAttribute('aria-pressed', 'false');
+  marcarPestanas();
   panel(vista).scrollTop = 0;
 
   if (vista === 'inicio') {
@@ -487,6 +652,10 @@ function conectarEventos() {
     if (casoAbierto) navegar(`#/caso/${encodeURIComponent(casoAbierto.id)}/avistamiento`);
   });
   porPrueba('boton-enviar-pista').addEventListener('click', enviarPista);
+  porPrueba('boton-resolver').addEventListener('click', () => mostrarConfirmacionCierre(true));
+  porRol('cancelar-cierre').addEventListener('click', () => mostrarConfirmacionCierre(false));
+  porPrueba('boton-confirmar-resolver').addEventListener('click', resolverCaso);
+  porRol('ver-todos').addEventListener('click', verTodos);
   porPrueba('boton-publicar').addEventListener('click', publicarReporte);
   porPrueba('boton-enviar-texto').addEventListener('click', enviarTextoEscrito);
   porPrueba('entrada-texto').addEventListener('keydown', (evento) => {
@@ -521,10 +690,10 @@ function conectarEventos() {
       pintarLista();
     });
   }
-  porRol('pestana-casos').addEventListener('click', (evento) => {
-    const abierta = aplicacion.dataset.hoja === 'lista';
-    aplicacion.dataset.hoja = abierta ? '' : 'lista';
-    evento.currentTarget.setAttribute('aria-pressed', String(!abierta));
+  porRol('pestana-explorar').addEventListener('click', explorar);
+  porRol('pestana-casos').addEventListener('click', () => {
+    aplicacion.dataset.hoja = aplicacion.dataset.hoja === 'lista' ? '' : 'lista';
+    marcarPestanas();
   });
 
   const microfonoNuevo = porPrueba('boton-microfono');
@@ -552,6 +721,7 @@ function conectarEventos() {
 async function arrancar() {
   conectarEventos();
   iniciarMapa();
+  seguirAltoDeHoja();
   await cargarCasos(true);
   enrutar();
 }
