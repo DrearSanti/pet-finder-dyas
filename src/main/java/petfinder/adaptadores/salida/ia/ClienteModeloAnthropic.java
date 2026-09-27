@@ -1,7 +1,6 @@
 package petfinder.adaptadores.salida.ia;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,20 +83,34 @@ public class ClienteModeloAnthropic implements ExtractorClaude.ClienteModelo {
      * solo puede llenar la tarjeta, no inventar campos nuevos.
      */
     private static JsonOutputFormat.Schema esquema() {
+        JsonOutputFormat.Schema.Builder constructor = JsonOutputFormat.Schema.builder();
+        definicionDelEsquema().forEach((clave, valor) -> constructor.putAdditionalProperty(clave, JsonValue.from(valor)));
+        return constructor.build();
+    }
+
+    /**
+     * El esquema como mapa, aparte del SDK, para poder revisarlo en una prueba.
+     *
+     * El tipo va con anyOf (texto de la lista, o null) y no con
+     * "type": ["string", "null"] más un enum: la API rechaza ese enum con un
+     * 400 ("Enum value 'PERDIDA' does not match declared type"). Las pruebas
+     * usan un doble del cliente, así que ese error solo apareció con una clave
+     * real; ClienteModeloAnthropicTest lo cuida desde entonces.
+     */
+    static Map<String, Object> definicionDelEsquema() {
         Map<String, Object> propiedades = new LinkedHashMap<>();
         for (String campo : CAMPOS) {
-            Map<String, Object> definicion = new LinkedHashMap<>();
-            definicion.put("type", List.of("string", "null"));
-            if (campo.equals("tipo")) {
-                definicion.put("enum", Arrays.asList("PERDIDA", "ENCONTRADA", null));
-            }
-            propiedades.put(campo, definicion);
+            propiedades.put(campo, campo.equals("tipo")
+                    ? Map.of("anyOf", List.of(
+                            Map.of("type", "string", "enum", List.of("PERDIDA", "ENCONTRADA")),
+                            Map.of("type", "null")))
+                    : Map.of("type", List.of("string", "null")));
         }
-        return JsonOutputFormat.Schema.builder()
-                .putAdditionalProperty("type", JsonValue.from("object"))
-                .putAdditionalProperty("additionalProperties", JsonValue.from(false))
-                .putAdditionalProperty("properties", JsonValue.from(propiedades))
-                .putAdditionalProperty("required", JsonValue.from(CAMPOS))
-                .build();
+        Map<String, Object> esquema = new LinkedHashMap<>();
+        esquema.put("type", "object");
+        esquema.put("additionalProperties", false);
+        esquema.put("properties", propiedades);
+        esquema.put("required", CAMPOS);
+        return esquema;
     }
 }
