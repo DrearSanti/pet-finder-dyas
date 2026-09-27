@@ -54,6 +54,10 @@ public class ExtractorClaude implements ExtractorDatosReporte {
             - nombre, especie, raza, color y senas describen a la mascota que se perdió.
             - descripcionMascota describe al animal que la persona encontró.
             - zona es el barrio o la zona; referencia es un lugar cercano que ayuda a ubicarlo.
+            - Si la zona o la referencia mencionada en la frase es un lugar que reconoces en Colombia \
+            (barrio, centro comercial, parque, estación), responde latitud y longitud aproximadas en \
+            grados decimales. Si no lo reconoces con seguridad o no menciona un lugar, responde null \
+            en ambas. Nunca inventes coordenadas.
             - descripcion resume qué pasó, en una frase.
             - contactoNombre y contactoMedio son cómo escribirle a la persona (celular o correo).
             - Usa el borradorActual para interpretar respuestas cortas según primerCampoFaltante: \
@@ -157,8 +161,9 @@ public class ExtractorClaude implements ExtractorDatosReporte {
 
     /**
      * La salida del modelo es un dato externo: se valida antes de usarla. Un
-     * JSON roto, que no sea un objeto o con un tipo o un campo que no es texto
-     * se rechaza completo, en vez de quedarse con una parte dudosa. Las
+     * JSON roto, que no sea un objeto o con un tipo o un campo de texto inválido
+     * se rechaza completo. Las coordenadas dudosas se descartan juntas para
+     * conservar los demás datos y dejar que la persona ajuste el pin. Las
      * excepciones las atrapa extraer(), que las convierte en Optional.empty().
      */
     private static Optional<BorradorReporte> aBorrador(String respuesta) {
@@ -173,13 +178,31 @@ public class ExtractorClaude implements ExtractorDatosReporte {
         if (tipo != null && !TIPOS.contains(tipo)) {
             throw new IllegalArgumentException("Tipo de reporte desconocido");
         }
+        Double latitud = numero(nodo, "latitud");
+        Double longitud = numero(nodo, "longitud");
+        // Estos límites aproximados solo descartan ubicaciones ajenas a Colombia; no geocodifican el lugar.
+        if (latitud == null || longitud == null
+                || latitud < -4.3 || latitud > 13.5 || longitud < -79.1 || longitud > -66.8) {
+            latitud = null;
+            longitud = null;
+        }
         BorradorReporte borrador = new BorradorReporte(
                 tipo != null ? TipoReporte.valueOf(tipo) : null,
                 texto(nodo, "nombre"), texto(nodo, "especie"), texto(nodo, "raza"),
                 texto(nodo, "color"), texto(nodo, "senas"), texto(nodo, "descripcionMascota"),
-                texto(nodo, "zona"), texto(nodo, "referencia"), null, null,
+                texto(nodo, "zona"), texto(nodo, "referencia"), latitud, longitud,
                 texto(nodo, "descripcion"), texto(nodo, "contactoNombre"), texto(nodo, "contactoMedio"));
         return borrador.equals(BorradorReporte.vacio()) ? Optional.empty() : Optional.of(borrador);
+    }
+
+    /** No convierte texto a número: una coordenada sugerida debe llegar como un número finito. */
+    private static Double numero(JsonNode nodo, String campo) {
+        JsonNode valor = nodo.get(campo);
+        if (valor == null || !valor.isNumber()) {
+            return null;
+        }
+        double numero = valor.doubleValue();
+        return Double.isFinite(numero) ? numero : null;
     }
 
     /** Texto del campo; null si falta, es null o está en blanco. Lanza si trae otra cosa que texto. */

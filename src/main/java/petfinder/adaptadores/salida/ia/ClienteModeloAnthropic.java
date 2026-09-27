@@ -34,7 +34,7 @@ public class ClienteModeloAnthropic implements ExtractorClaude.ClienteModelo {
     private static final long MAXIMO_DE_TOKENS = 1024L;
 
     private static final List<String> CAMPOS = List.of("tipo", "nombre", "especie", "raza", "color", "senas",
-            "descripcionMascota", "zona", "referencia", "descripcion", "contactoNombre", "contactoMedio");
+            "descripcionMascota", "zona", "referencia", "latitud", "longitud", "descripcion", "contactoNombre", "contactoMedio");
 
     private final AnthropicClient cliente;
     private final String modelo;
@@ -78,9 +78,9 @@ public class ClienteModeloAnthropic implements ExtractorClaude.ClienteModelo {
     }
 
     /**
-     * Fuerza la forma de la salida: un objeto con los doce campos, cada uno
-     * texto o null, y el tipo limitado a PERDIDA o ENCONTRADA. El modelo
-     * solo puede llenar la tarjeta, no inventar campos nuevos.
+     * Fuerza la forma de la salida: catorce campos, con coordenadas numéricas
+     * o null, los demás de texto o null y el tipo limitado a PERDIDA o ENCONTRADA.
+     * El modelo solo puede llenar la tarjeta, no inventar campos nuevos.
      */
     private static JsonOutputFormat.Schema esquema() {
         JsonOutputFormat.Schema.Builder constructor = JsonOutputFormat.Schema.builder();
@@ -100,11 +100,13 @@ public class ClienteModeloAnthropic implements ExtractorClaude.ClienteModelo {
     static Map<String, Object> definicionDelEsquema() {
         Map<String, Object> propiedades = new LinkedHashMap<>();
         for (String campo : CAMPOS) {
-            propiedades.put(campo, campo.equals("tipo")
-                    ? Map.of("anyOf", List.of(
+            propiedades.put(campo, switch (campo) {
+                case "tipo" -> Map.of("anyOf", List.of(
                             Map.of("type", "string", "enum", List.of("PERDIDA", "ENCONTRADA")),
-                            Map.of("type", "null")))
-                    : Map.of("type", List.of("string", "null")));
+                            Map.of("type", "null")));
+                case "latitud", "longitud" -> Map.of("type", List.of("number", "null"));
+                default -> Map.of("type", List.of("string", "null"));
+            });
         }
         Map<String, Object> esquema = new LinkedHashMap<>();
         esquema.put("type", "object");
