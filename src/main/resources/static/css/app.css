@@ -219,6 +219,16 @@ h1, h2, h3, p { margin:0; }
 /* Cerrar el caso: enlace discreto y confirmación en línea sobre superficie-2, sin sombra (DESIGN.md §5 y §8). */
 .btn-cierre { align-self:center; }
 .confirmacion { display:flex; flex-direction:column; gap:10px; background:var(--color-superficie-2); border-radius:var(--radio-tarjeta); padding:16px; }
+/* "La tengo yo": el aviso de quien tiene a la mascota y las posibles coincidencias, en bloques de superficie-2. */
+.hallazgo, .coincidencias { display:flex; flex-direction:column; gap:8px; background:var(--color-superficie-2); border-radius:var(--radio-tarjeta); padding:16px; }
+.hallazgo .estado { align-self:flex-start; }
+.hallazgo .nombre { overflow-wrap:anywhere; }
+.lista-coincidencias { display:flex; flex-direction:column; gap:10px; }
+.coincidencia { display:flex; align-items:center; gap:12px; }
+.coincidencia .t { display:flex; flex-direction:column; gap:3px; flex:1; min-width:0; }
+.coincidencia .nombre, .coincidencia .meta { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.coincidencias .btn-secundario { background:var(--color-superficie); padding:10px 16px; }
+.pista i.encontrada { background:var(--estado-encontrada); }
 
 /* ===== Publicado ===== */
 .vista-publicado { align-items:center; justify-content:center; text-align:center; gap:22px; min-height:70vh; }

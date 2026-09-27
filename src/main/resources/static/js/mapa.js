@@ -137,7 +137,8 @@ function icono(estado, seleccionado) {
 }
 
 function estadoDePin(caso) {
-  return caso.tipo === 'ENCONTRADA' ? 'encontrada' : 'perdida';
+  // Una pérdida que alguien dice tener ya se muestra como encontrada, aunque siga activa.
+  return caso.tipo === 'ENCONTRADA' || caso.laTieneAlguien ? 'encontrada' : 'perdida';
 }
 
 function tieneCoordenadas(elemento) {
@@ -282,9 +283,9 @@ export function crearMapa(contenedor, {
 }
 
 /**
- * Mapa pequeño con un solo pin que la persona coloca tocando o arrastra. Se usa
- * para decir dónde se perdió una mascota o dónde se la vio: sin este gesto un
- * reporte publicado por voz no tendría coordenadas y no aparecería en el mapa.
+ * Mapa pequeño con un solo pin, sugerido automáticamente o elegido por la persona.
+ * Solo los gestos explícitos llaman a alElegir: así una sugerencia nunca bloquea
+ * los siguientes movimientos automáticos como si la persona ya hubiera confirmado.
  */
 export function crearSelector(contenedor, {
   estado = 'perdida', alElegir = () => {}, vistaEn = null, alFallarUbicacion = () => {},
@@ -334,6 +335,10 @@ export function crearSelector(contenedor, {
 
   return {
     colocar,
+    mover: (latitud, longitud) => {
+      colocar(latitud, longitud);
+      mapa.setView([latitud, longitud], 16);
+    },
     invalidar: () => mapa.invalidateSize(),
     destruir: () => {
       vivo = false;

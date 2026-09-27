@@ -10,6 +10,7 @@ import petfinder.domain.model.Mascota;
 import petfinder.domain.model.ReporteEncontrada;
 import petfinder.domain.model.ReporteMascota;
 import petfinder.domain.model.ReportePerdida;
+import petfinder.domain.model.TipoAvistamiento;
 import petfinder.domain.model.TipoReporte;
 import petfinder.domain.model.Ubicacion;
 
@@ -21,8 +22,10 @@ import petfinder.domain.model.Ubicacion;
  * Hay dos vistas porque hay dos públicos. {@link #resumen} alimenta la lista y
  * el mapa, que ve cualquiera: coordenadas aproximadas y contacto enmascarado.
  * {@link #detalle} es la página de un caso: muestra el contacto completo porque
- * quien encuentra a la mascota necesita llamar, pero nunca el de quien reportó
- * un avistamiento.
+ * quien encuentra a la mascota necesita llamar. Los avistamientos nunca llevan
+ * el contacto de quien avisó; la única excepción es {@link HallazgoDTO}: quien
+ * dice tener a la mascota ("La tengo yo") deja su contacto para que la familia
+ * vaya por ella, y va aparte para que esa exposición sea explícita.
  */
 public record ReporteDTO(
         String id,
@@ -43,12 +46,14 @@ public record ReporteDTO(
         String nombreContacto,
         String contacto,
         int cantidadAvistamientos,
+        boolean laTieneAlguien,
+        HallazgoDTO hallazgo,
         List<AvistamientoPublicoDTO> avistamientos) {
 
     private static final String PUNTO = "•";
     private static final String OCULTO = "•••";
 
-    /** Un avistamiento tal como se muestra: sin nombre ni medio de quien lo reportó. */
+    /** Un avistamiento tal como se muestra: sin nombre ni medio de quien lo reportó, con su tipo (pista o hallazgo). */
     public record AvistamientoPublicoDTO(
             String id,
             LocalDateTime fechaHora,
@@ -56,13 +61,34 @@ public record ReporteDTO(
             String referencia,
             Double latitud,
             Double longitud,
-            String descripcion) {
+            String descripcion,
+            TipoAvistamiento tipo) {
 
         static AvistamientoPublicoDTO desde(Avistamiento avistamiento) {
             Ubicacion ubicacion = avistamiento.ubicacion();
             return new AvistamientoPublicoDTO(avistamiento.id(), avistamiento.fechaHora(),
                     ubicacion.zonaOBarrio(), ubicacion.referencia(),
-                    ubicacion.latitud(), ubicacion.longitud(), avistamiento.descripcion());
+                    ubicacion.latitud(), ubicacion.longitud(), avistamiento.descripcion(), avistamiento.tipo());
+        }
+    }
+
+    /**
+     * "La tengo yo": el último aviso de alguien que tiene a la mascota, con su
+     * contacto. Solo en el detalle del caso, nunca en la lista ni en el mapa.
+     */
+    public record HallazgoDTO(
+            LocalDateTime fechaHora,
+            String zona,
+            String referencia,
+            String descripcion,
+            String nombreContacto,
+            String contacto) {
+
+        static HallazgoDTO desde(Avistamiento avistamiento) {
+            Ubicacion ubicacion = avistamiento.ubicacion();
+            Contacto quien = avistamiento.contactoReportante();
+            return new HallazgoDTO(avistamiento.fechaHora(), ubicacion.zonaOBarrio(), ubicacion.referencia(),
+                    avistamiento.descripcion(), quien.nombre(), quien.medioContacto());
         }
     }
 
@@ -71,7 +97,7 @@ public record ReporteDTO(
         return construir(reporte, true);
     }
 
-    /** Vista de un caso: ubicación exacta, contacto completo y avistamientos sin el contacto de quien los vio. */
+    /** Vista de un caso: ubicación exacta, contacto completo, avistamientos sin contacto y el hallazgo si lo hay. */
     public static ReporteDTO detalle(ReporteMascota reporte) {
         return construir(reporte, false);
     }
@@ -87,12 +113,14 @@ public record ReporteDTO(
         String descripcionMascota = null;
         Contacto contacto;
         List<Avistamiento> avistamientos = List.of();
+        boolean laTieneAlguien = false;
 
         if (reporte instanceof ReportePerdida perdida) {
             tipo = TipoReporte.PERDIDA;
             mascota = perdida.getMascota();
             contacto = perdida.getContactoPropietario();
             avistamientos = perdida.getAvistamientos();
+            laTieneAlguien = perdida.laTieneAlguien();
         } else if (reporte instanceof ReporteEncontrada encontrada) {
             tipo = TipoReporte.ENCONTRADA;
             descripcionMascota = encontrada.getDescripcionMascota();
@@ -103,6 +131,11 @@ public record ReporteDTO(
 
         String nombreContacto = contacto == null ? null : contacto.nombre();
         String medio = contacto == null ? null : contacto.medioContacto();
+        HallazgoDTO hallazgo = publico ? null : avistamientos.stream()
+                .filter(Avistamiento::esHallazgo)
+                .reduce((anterior, ultimo) -> ultimo)
+                .map(HallazgoDTO::desde)
+                .orElse(null);
         List<AvistamientoPublicoDTO> avistamientosPublicos = publico
                 ? List.of()
                 : avistamientos.stream().map(AvistamientoPublicoDTO::desde).toList();
@@ -126,6 +159,8 @@ public record ReporteDTO(
                 nombreContacto,
                 publico ? enmascarar(medio) : medio,
                 avistamientos.size(),
+                laTieneAlguien,
+                hallazgo,
                 avistamientosPublicos);
     }
 

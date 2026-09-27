@@ -86,6 +86,12 @@
         <img class="marca" src="img/marca.svg" alt="" width="22" height="22">
         <p data-rol="pregunta"></p>
       </div>
+      <!-- Si reporta un hallazgo, los casos perdidos que se le parecen, para avisar ahí en vez de duplicar -->
+      <div class="coincidencias" data-rol="coincidencias" hidden>
+        <span class="nombre">Posibles coincidencias</span>
+        <p class="meta">Si es una de estas mascotas, avísale a su familia que la tienes.</p>
+        <div class="lista-coincidencias" data-rol="lista-coincidencias"></div>
+      </div>
       <div class="fila-entrada">
         <button type="button" class="mic" data-prueba="boton-microfono" aria-label="Dictar lo que pasó">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -95,7 +101,7 @@
       </div>
       <div class="ubicacion">
         <span class="nombre">¿Dónde fue?</span>
-        <p class="meta">Toca el mapa para poner el pin, o la flecha para usar tu ubicación. Así el caso aparece donde corresponde.</p>
+        <p class="meta">Pusimos el pin donde nos dijiste o donde estás. Tócalo o arrástralo si hace falta.</p>
         <div class="mapa-mini" data-prueba="mapa-reporte"></div>
       </div>
       <button type="button" class="btn btn-primario" data-prueba="boton-publicar">Publicar reporte</button>
@@ -120,6 +126,14 @@
         <div class="dato"><small>Pistas</small><b data-rol="caso-cuenta"></b></div>
       </div>
       <p class="descripcion" data-rol="caso-descripcion"></p>
+      <!-- "La tengo yo": quien la encontró dejó su contacto para que la familia vaya por ella -->
+      <div class="hallazgo" data-rol="caso-hallazgo" hidden>
+        <span class="estado encontrada">Alguien la tiene</span>
+        <p class="nombre" data-rol="hallazgo-titulo"></p>
+        <p class="meta" data-rol="hallazgo-donde"></p>
+        <p class="nombre" data-rol="hallazgo-contacto"></p>
+        <p class="meta">Escríbele. Cuando la recojas, toca Ya apareció.</p>
+      </div>
       <div class="pistas">
         <span class="nombre">Pistas de la comunidad</span>
         <div class="lista-pistas" data-rol="caso-pistas"></div>
@@ -129,6 +143,7 @@
         <button type="button" class="btn btn-primario ancho" data-prueba="boton-la-vi">La vi</button>
         <button type="button" class="btn btn-secundario" data-rol="compartir">Compartir</button>
       </div>
+      <button type="button" class="btn btn-secundario" data-prueba="boton-la-tengo">La tengo yo</button>
       <!-- Cerrar el caso: la confirmación reemplaza a las acciones para que siga habiendo un solo botón primario -->
       <button type="button" class="btn btn-texto btn-cierre" data-prueba="boton-resolver">Ya apareció</button>
       <div class="confirmacion" data-rol="confirmar-cierre" hidden>
@@ -148,11 +163,11 @@
       </div>
       <h2 class="titular" data-rol="pista-titulo"></h2>
       <div class="mapa-mini" data-prueba="mapa-avistamiento"></div>
-      <p class="meta">Toca el mapa para marcar dónde la viste, o la flecha si estás ahí. Puedes arrastrar el pin si hace falta.</p>
+      <p class="meta" data-rol="pista-ayuda">Toca el mapa para marcar dónde la viste, o la flecha si estás ahí. Puedes arrastrar el pin si hace falta.</p>
       <div class="tarjeta-viva">
-        <label class="campo"><i class="pt pt-resuelto"></i><span class="k">Dónde</span>
+        <label class="campo"><i class="pt pt-resuelto"></i><span class="k" data-rol="pista-k-donde">Dónde</span>
           <input class="v" data-rol="pista-zona" aria-label="Dónde la viste" placeholder="Falta" autocomplete="off"></label>
-        <label class="campo"><i class="pt pt-avistamiento"></i><span class="k">Qué viste</span>
+        <label class="campo"><i class="pt pt-avistamiento"></i><span class="k" data-rol="pista-k-que">Qué viste</span>
           <input class="v" data-rol="pista-descripcion" aria-label="Qué viste" placeholder="Falta" autocomplete="off"></label>
         <label class="campo"><i class="pt pt-neutro"></i><span class="k">Contacto</span>
           <input class="v" data-rol="pista-contacto" aria-label="Tu contacto, opcional" placeholder="Opcional" autocomplete="off"></label>

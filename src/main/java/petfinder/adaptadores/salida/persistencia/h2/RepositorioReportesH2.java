@@ -102,6 +102,7 @@ public class RepositorioReportesH2 implements RepositorioReportes {
         fila.setLatitud(a.ubicacion().latitud());
         fila.setLongitud(a.ubicacion().longitud());
         fila.setDescripcion(a.descripcion());
+        fila.setTipo(a.tipo());
         if (a.contactoReportante() != null) {
             fila.setContactoNombre(a.contactoReportante().nombre());
             fila.setContactoMedio(a.contactoReportante().medioContacto());
@@ -131,6 +132,6 @@ public class RepositorioReportesH2 implements RepositorioReportes {
                 : new Contacto(fila.getContactoNombre(), fila.getContactoMedio());
         return new Avistamiento(fila.getId(), fila.getFechaHora(),
                 new Ubicacion(fila.getZona(), fila.getReferencia(), fila.getLatitud(), fila.getLongitud()),
-                fila.getDescripcion(), contacto);
+                fila.getDescripcion(), contacto, fila.getTipo());
     }
 }

@@ -4,11 +4,15 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import petfinder.domain.model.TipoAvistamiento;
 
 /** Fila de la tabla AVISTAMIENTOS. El contacto es opcional, como en el dominio. */
 @Entity
@@ -36,6 +40,10 @@ public class AvistamientoEntity {
     private String contactoNombre;
     private String contactoMedio;
 
+    /** Pista o hallazgo. Como texto y no como número, para que reordenar el enum no cambie datos guardados. */
+    @Enumerated(EnumType.STRING)
+    private TipoAvistamiento tipo;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public ReporteEntity getReporte() { return reporte; }
@@ -56,4 +64,6 @@ public class AvistamientoEntity {
     public void setContactoNombre(String contactoNombre) { this.contactoNombre = contactoNombre; }
     public String getContactoMedio() { return contactoMedio; }
     public void setContactoMedio(String contactoMedio) { this.contactoMedio = contactoMedio; }
+    public TipoAvistamiento getTipo() { return tipo; }
+    public void setTipo(TipoAvistamiento tipo) { this.tipo = tipo; }
 }

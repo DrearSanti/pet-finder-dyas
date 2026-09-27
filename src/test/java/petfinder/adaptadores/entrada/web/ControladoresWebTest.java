@@ -237,6 +237,23 @@ class ControladoresWebTest {
                 .andExpect(jsonPath("$.error").value("El reporte PF-016 no está activo y no admite avistamientos"));
     }
 
+    @Test
+    @DisplayName("POST de \"La tengo yo\" sin contacto responde 400 y no llega al servicio")
+    void laTengoSinContactoResponde400() throws Exception {
+        // Arrange
+        String cuerpo = """
+                { "tipo": "LA_TENGO", "zona": "Palatino", "descripcion": "Está en mi casa" }
+                """;
+
+        // Act & Assert
+        mvc.perform(post("/api/reportes/PF-018/avistamientos")
+                        .contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error")
+                        .value("Si la tienes contigo, deja tu contacto para que su familia te encuentre."));
+        verify(registroAvistamientos, never()).registrar(any(), any());
+    }
+
     // --- Voz ---
 
     @Test

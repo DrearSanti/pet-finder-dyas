@@ -186,6 +186,7 @@ Regla: una tarjeta **o** tiene sombra **o** está sobre un fondo de otro tono, n
 | Controles | Flotan en vidrio: buscador arriba y botón "Mi ubicación" abajo a la derecha, sobre la hoja |
 | Cerca de ti | "Mi ubicación" en el mapa principal activa "Cerca de ti": casos a menos de 5 km, del más cercano al más lejano, con la distancia en cada tarjeta ("a 1,2 km") y el punto "Estás aquí" en acento. Se apaga con el mismo botón (presionado = relleno de acento) o con "Ver todos". La posición no sale del navegador |
 | Mapas pequeños | El mismo botón "Mi ubicación" pone el pin donde está la persona, que solo lo ajusta si hace falta. Alto relativo a la pantalla (entre 240 y 380 px) |
+| Pin automático en nuevo reporte | Al abrir se pide la ubicación como ayuda opcional; si se niega, el mapa queda en Bogotá sin error. Un lugar reconocido en la frase puede ubicar el pin con coordenadas aproximadas del asistente. Tocar, arrastrar o usar "Mi ubicación" fija la elección de la persona: ninguna respuesta automática posterior la reemplaza. La ubicación del dispositivo que llegue tarde tampoco reemplaza un lugar ya sugerido. Con regex se conserva el pin actual. La persona revisa y ajusta antes de publicar |
 
 ---
 
@@ -206,6 +207,8 @@ Regla: una tarjeta **o** tiene sombra **o** está sobre un fondo de otro tono, n
 | **Hoja inferior** | `--radio-hoja` arriba, agarradera de 36 × 5 px, `--sombra-hoja` |
 | **Control segmentado** | Píldora Perla con opción activa en blanco ("Hablar / Escribir", "Mapa / Lista") |
 | **Aviso (toast)** | Píldora Tinta arriba, 3 s, texto 15/500. Errores con el punto de estado Perdida |
+| **Aviso de hallazgo** | Bloque `--color-superficie-2` con `--radio-tarjeta` en el detalle de una pérdida: etiqueta "Alguien la tiene" (Encontrada), "Alguien tiene a {nombre}" en título 2, qué contó y dónde en pie, y el contacto de quien la tiene. Es el único lugar donde se muestra el contacto de quien avisa |
+| **Posibles coincidencias** | Mismo bloque en "Nuevo reporte" cuando la persona reporta un hallazgo: hasta 3 pérdidas activas que nombra o de la misma especie cerca, cada una con "Es esta" (secundario). Nunca "Es tu mascota": decidir es de la persona |
 | **Confirmación en línea** | Bloque `--color-superficie-2` con `--radio-tarjeta`, sin sombra: pregunta en título 2, consecuencia en pie y dos acciones, la primaria con el verbo ("Sí, ya apareció") y "Cancelar" en texto. Mientras está abierta reemplaza a las acciones de la vista, así sigue habiendo un solo botón primario. Nunca `confirm()` |
 
 Estados de interacción: al presionar, escala 0.97; foco visible con anillo de 2 px del acento a 2 px de distancia; deshabilitado se evita: se deja activo y se explica qué falta.
@@ -237,7 +240,7 @@ Vistas del producto (todas en [`vistas.html`](vistas.html)):
 |---|---|
 | Inicio | Mapa con pines por estado, buscador de vidrio, hoja "Cerca de ti" con carrusel de tarjetas, barra de pestañas |
 | Nuevo reporte | Control "Hablar / Escribir", titular editorial, transcripción coloreada, tarjeta viva, pregunta del asistente, micrófono y "Revisar y publicar" |
-| Detalle del caso | Foto principal, etiqueta de estado con `PF-###`, nombre en display, tres datos, pistas de la comunidad, "La vi" y "Compartir", y el enlace "Ya apareció" ("Ya volvió a casa" en un hallazgo) que abre la confirmación en línea. Un caso resuelto se muestra con la etiqueta "Resuelto" y sin acciones |
+| Detalle del caso | Foto principal, etiqueta de estado con `PF-###`, nombre en display, tres datos, pistas de la comunidad, "La vi" y "Compartir", el botón secundario "La tengo yo" (quien la encontró avisa con su contacto; el caso pasa a "Encontrada" y muestra el aviso de hallazgo) y el enlace "Ya apareció" ("Ya volvió a casa" en un hallazgo) que abre la confirmación en línea. Un caso resuelto se muestra con la etiqueta "Resuelto" y sin acciones |
 | Reportar avistamiento | Tarjeta viva corta (Dónde, Cuándo, Qué viste, Contacto opcional) sobre un mini mapa |
 | Publicado | Confirmación con la marca animada, identificador y acceso a compartir |
 
