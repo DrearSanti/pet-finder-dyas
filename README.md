@@ -1,9 +1,15 @@
 # Pet Finder
 
-Módulo funcional en Java para el Corte 1 de Diseño y Arquitectura de Software.
-Universidad de La Sabana
+Proyecto de Diseño y Arquitectura de Software, Corte 2. Universidad de La Sabana.
+Santiago Escobar · Antonio Benítez · Mateo Ramírez
 
-Red comunitaria de reportes y alertas para mascotas perdidas y encontradas.
+Pet Finder conecta a quien perdió una mascota con quien la vio o la encontró: se cuenta lo que pasó hablando o escribiendo, el asistente arma el reporte y el caso aparece en un mapa.
+
+**App en vivo: [pet-finder-akac.onrender.com](https://pet-finder-akac.onrender.com)** — se abre en el navegador del computador o del celular y se instala como app (PWA) desde Safari o Chrome.
+
+> La app está en el plan gratis de Render: si nadie la usa en 15 minutos se duerme, y la primera visita tarda cerca de un minuto en despertarla. Los datos viven en H2 en memoria, así que cada vez que despierta vuelve a los casos de ejemplo.
+
+Lo que se puede hacer: reportar una mascota perdida o encontrada con la voz o escribiendo (el asistente con Claude llena la tarjeta y pone el pin en el lugar que se nombra), ver los casos en el mapa y los que están **cerca de ti**, dejar una pista (**La vi**), avisar que la tienes (**La tengo yo**), recibir **posibles coincidencias** al reportar un hallazgo y cerrar el caso (**Ya apareció**).
 
 ---
 
@@ -17,7 +23,8 @@ Esta sección lleva de un repositorio recién clonado a la app corriendo y a cad
 |---|---|---|
 | **JDK 17** | Compilar y correr la app | `java -version` debe decir 17 (con el wrapper: `./mvnw -v` → `Java version: 17`) |
 | Git | Clonar el repositorio. En Windows trae **Git Bash**, la terminal recomendada | `git --version` |
-| Google Chrome | Usar la app (la captura de voz funciona en Chrome y Edge) y las pruebas de interfaz | — |
+| Safari, Chrome o Edge | Usar la app. La voz funciona en los tres (en Safari, con el dictado activado); en Firefox se escribe | — |
+| Google Chrome (opcional) | Solo para las pruebas de interfaz con Selenium (`-Pui`) | — |
 | k6 (opcional) | Solo para las pruebas de carga | `k6 version` |
 
 La primera vez que corras `mvnw` descarga Maven 3.9.16 y las dependencias: necesita internet y tarda unos minutos. Después funciona sin conexión.
@@ -42,9 +49,9 @@ En PowerShell el último paso es `Copy-Item .env.example .env`. El archivo `.env
 |---|---|
 | `./mvnw spring-boot:run` | `.\mvnw.cmd spring-boot:run` |
 
-Cuando la consola diga `Started PetFinderApplication`, abre **http://localhost:8080 en Chrome**. La app arranca con algunos casos de ejemplo. Para detenerla, `Ctrl + C`.
+Cuando la consola diga `Started PetFinderApplication`, abre **http://localhost:8080** en Safari, Chrome o Edge. La app arranca con algunos casos de ejemplo. Para detenerla, `Ctrl + C`.
 
-Para probar la voz, permite el micrófono cuando Chrome lo pida. Si tu navegador no tiene reconocimiento de voz (Firefox, por ejemplo), el campo de texto hace lo mismo.
+Para probar la voz, permite el micrófono cuando el navegador lo pida. Si tu navegador no tiene reconocimiento de voz (Firefox, por ejemplo), el campo de texto hace lo mismo.
 
 Otras formas de correrla:
 
@@ -735,7 +742,7 @@ Números de `./mvnw clean -Pui verify` del 2026-09-27 sobre `main` (commit `bd67
 | Menú interactivo: **La tengo yo** y **Ya apareció**. *Funcionalidad agregada porque el reto la exige*: el menú lleva al navegador las operaciones del Corte 1; avisar que alguien tiene la mascota es una variante del avistamiento, y "Ya apareció" usa el `resolver()` que ya existía | Usabilidad y seguridad | `Avistamiento` gana `TipoAvistamiento` (`LA_VI`, `LA_TENGO`); un hallazgo exige contacto y el caso sigue activo hasta que la familia confirma | `domain/model/Avistamiento.java`, `domain/model/TipoAvistamiento.java`, `ReportePerdida.laTieneAlguien()` | `HallazgoTest`, `FlujoHallazgoSistemaIT` | 3 de 3 y 3 de 3 en verde; "La tengo yo" sin contacto responde 400 y no toca el caso |
 | Menú interactivo: **posibles coincidencias**. *Funcionalidad agregada*, con relación indirecta al reto: al reportar un hallazgo, la interfaz sugiere hasta 3 casos perdidos por nombre, o por especie y cercanía | Usabilidad | Heurística en el navegador; solo sugiere y la persona decide | `static/js/app.js` (`posiblesCoincidencias`) | Sin prueba automática | **Declarado como límite:** el plan del corte la había dejado fuera de alcance y no hay prueba que la respalde (sección 7) |
 | Captura de voz | Rendimiento | El servidor solo recibe texto; `InterpreteComandoVoz` usa reglas (regex) y no un modelo, para responder en microsegundos | `adaptadores/entrada/web/VozController.java`, `application/service/InterpreteComandoVoz.java`, `ServicioComandosVoz.java` | k6 `perf/scripts/carga.js` (50 usuarios, 4 min 30 s) | **Cumple el SLO**: p95 de 89,2 ms (objetivo ≤ 500 ms), 0 % de errores en 21.442 peticiones (objetivo < 1 %), 79,2 req/s (objetivo ≥ 30) |
-| Captura de voz | Modificabilidad | La voz publica por `GestionReportes`, el mismo puerto que el formulario y la consola | `application/port/entrada/ProcesadorComandosVoz.java`, `config/ConfiguracionPetFinder.java` | `FlujoVozSistemaIT`, `InterpreteComandoVozTest`, `ServicioComandosVozTest` | 4 de 4, 26 de 26 y 5 de 5 en verde. "Max, perro, Chía" por formulario, voz y asistente produce el mismo reporte. **Resuelto con un límite:** la transcripción depende de Web Speech, así que la voz solo funciona en Chrome y Edge y con internet; en otros navegadores la misma frase se escribe en el campo de texto. Faltaría transcribir en el servidor, que se descartó para no procesar audio (sección 7) |
+| Captura de voz | Modificabilidad | La voz publica por `GestionReportes`, el mismo puerto que el formulario y la consola | `application/port/entrada/ProcesadorComandosVoz.java`, `config/ConfiguracionPetFinder.java` | `FlujoVozSistemaIT`, `InterpreteComandoVozTest`, `ServicioComandosVozTest` | 4 de 4, 26 de 26 y 5 de 5 en verde. "Max, perro, Chía" por formulario, voz y asistente produce el mismo reporte. **Resuelto con un límite:** la transcripción depende de Web Speech, así que la voz funciona en Chrome, Edge y Safari (Mac y iPhone, con el dictado activado) y necesita internet; en Firefox la misma frase se escribe en el campo de texto. Faltaría transcribir en el servidor, que se descartó para no procesar audio (sección 7) |
 | Captura de voz: **asistente con tarjeta viva**. *Funcionalidad agregada porque el reto la exige*: la captura de voz necesita completar por turnos lo que una sola frase no dice | Disponibilidad y seguridad | Puerto `ExtractorDatosReporte` con dos adaptadores (Claude primero, regex de respaldo); el asistente no recibe `GestionReportes`, así que nunca publica | `application/service/ServicioAsistente.java`, `adaptadores/salida/ia/ExtractorClaude.java`, `application/service/ExtractorRegex.java`, `static/js/tarjeta-viva.js` | `ServicioAsistenteTest`, `ExtractorRegexTest`, `ExtractorClaudeTest` | 15 de 15, 26 de 26 y 45 de 45 en verde, sin llamar a Claude. Las coordenadas que Claude sugiere para un lugar nombrado se descartan si caen fuera de Colombia. `git diff step-14-h2-integrado step-15-extractor-claude --stat -- src/main/java/petfinder/domain` sale vacío |
 | Los dos retos | Modificabilidad y testabilidad | Arquitectura hexagonal verificada con ArchUnit ([ADR-001](docs/adr/ADR-001-estilo-arquitectonico.md)) | `test/.../arquitectura/ReglasArquitecturaTest.java` | `ReglasArquitecturaTest` y JaCoCo | 5 de 5 reglas en verde. Cobertura total: 83,1 % de instrucciones y 83,3 % de ramas; paquete `domain`: 97,0 % y 87,3 % |
 
@@ -743,7 +750,8 @@ Números de `./mvnw clean -Pui verify` del 2026-09-27 sobre `main` (commit `bd67
 
 ### Límites conocidos
 
-- **La voz solo funciona en Chrome y Edge, y con internet** (Web Speech). En otros navegadores el campo de texto hace lo mismo.
+- **La voz depende del navegador y de internet** (Web Speech): funciona en Chrome, Edge y Safari; en Firefox el campo de texto hace lo mismo.
+- **Plan gratis de Render**: la app se duerme tras 15 minutos sin uso y tarda cerca de un minuto en despertar; al despertar vuelve a los casos de ejemplo.
 - **H2 en memoria:** los datos se pierden al reiniciar y la API no puede correr en varias instancias.
 - **Sin paginación y con consultas N+1** en la lista de casos: es el cuello de botella que midió la carga.
 - **Sin cuentas ni permisos:** cualquiera puede resolver o cerrar un caso.
