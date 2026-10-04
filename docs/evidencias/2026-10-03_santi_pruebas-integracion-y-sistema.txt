@@ -1,0 +1,24 @@
+-------------------------------------------------------------------------------
+Test set: petfinder.integracion.persistencia.DatosDeEjemploIT
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.15 s -- in petfinder.integracion.persistencia.DatosDeEjemploIT
+-------------------------------------------------------------------------------
+Test set: petfinder.integracion.persistencia.RepositorioReportesH2IT
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.938 s -- in petfinder.integracion.persistencia.RepositorioReportesH2IT
+-------------------------------------------------------------------------------
+Test set: petfinder.integracion.persistencia.ServicioReportesH2IT
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.975 s -- in petfinder.integracion.persistencia.ServicioReportesH2IT
+-------------------------------------------------------------------------------
+Test set: petfinder.integracion.sistema.FlujoHallazgoSistemaIT
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.662 s -- in petfinder.integracion.sistema.FlujoHallazgoSistemaIT
+-------------------------------------------------------------------------------
+Test set: petfinder.integracion.sistema.FlujoReportePerdidaSistemaIT
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.314 s -- in petfinder.integracion.sistema.FlujoReportePerdidaSistemaIT
+-------------------------------------------------------------------------------
+Test set: petfinder.integracion.sistema.FlujoVozSistemaIT
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.225 s -- in petfinder.integracion.sistema.FlujoVozSistemaIT
