@@ -1,0 +1,80 @@
+-------------------------------------------------------------------------------
+Test set: petfinder.adaptadores.entrada.web.ControladoresWebTest
+-------------------------------------------------------------------------------
+Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.619 s -- in petfinder.adaptadores.entrada.web.ControladoresWebTest
+-------------------------------------------------------------------------------
+Test set: petfinder.adaptadores.entrada.web.MapeoDtoTest
+-------------------------------------------------------------------------------
+Tests run: 23, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.237 s -- in petfinder.adaptadores.entrada.web.MapeoDtoTest
+-------------------------------------------------------------------------------
+Test set: petfinder.adaptadores.ia.ExtractorClaudeTest
+-------------------------------------------------------------------------------
+Tests run: 45, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.361 s -- in petfinder.adaptadores.ia.ExtractorClaudeTest
+-------------------------------------------------------------------------------
+Test set: petfinder.adaptadores.salida.ia.ClienteModeloAnthropicTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in petfinder.adaptadores.salida.ia.ClienteModeloAnthropicTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.asistente.ExtractorRegexTest
+-------------------------------------------------------------------------------
+Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.120 s -- in petfinder.application.asistente.ExtractorRegexTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.asistente.ServicioAsistenteTest
+-------------------------------------------------------------------------------
+Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.129 s -- in petfinder.application.asistente.ServicioAsistenteTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.service.ServicioAvistamientosMockTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.300 s -- in petfinder.application.service.ServicioAvistamientosMockTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.service.ServicioAvistamientosTest
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.034 s -- in petfinder.application.service.ServicioAvistamientosTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.service.ServicioReportesMockTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.033 s -- in petfinder.application.service.ServicioReportesMockTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.service.ServicioReportesTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in petfinder.application.service.ServicioReportesTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.voz.InterpreteComandoVozTest
+-------------------------------------------------------------------------------
+Tests run: 26, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.116 s -- in petfinder.application.voz.InterpreteComandoVozTest
+-------------------------------------------------------------------------------
+Test set: petfinder.application.voz.ServicioComandosVozTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.113 s -- in petfinder.application.voz.ServicioComandosVozTest
+-------------------------------------------------------------------------------
+Test set: petfinder.arquitectura.ReglasArquitecturaTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.506 s -- in petfinder.arquitectura.ReglasArquitecturaTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.CreadoresReporteTest
+-------------------------------------------------------------------------------
+Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.053 s -- in petfinder.domain.CreadoresReporteTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.EstadoReporteTest
+-------------------------------------------------------------------------------
+Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.047 s -- in petfinder.domain.EstadoReporteTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.GeneradorIdReportesTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.051 s -- in petfinder.domain.GeneradorIdReportesTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.HallazgoTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.013 s -- in petfinder.domain.HallazgoTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.ReconstruccionReporteTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in petfinder.domain.ReconstruccionReporteTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.borrador.BorradorReporteTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in petfinder.domain.borrador.BorradorReporteTest
+-------------------------------------------------------------------------------
+Test set: petfinder.domain.borrador.UbicacionTest
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.041 s -- in petfinder.domain.borrador.UbicacionTest

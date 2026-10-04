@@ -25,7 +25,7 @@ Desde la raíz del proyecto. En macOS, Linux y **Git Bash** de Windows se usa `.
 | Unitarias, ArchUnit y slice web (`*Test`) | `./mvnw test` | `.\mvnw.cmd test` |
 | Una sola clase | `./mvnw test -Dtest=MapeoDtoTest` | `.\mvnw.cmd test "-Dtest=MapeoDtoTest"` |
 | Todo: unitarias + integración + sistema (`*IT`) + cobertura | `./mvnw verify` | `.\mvnw.cmd verify` |
-| Solo las pruebas de sistema | `./mvnw verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT'` | `.\mvnw.cmd verify "-Dtest=NINGUNA" "-Dsurefire.failIfNoSpecifiedTests=false" "-Dit.test=FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT"` |
+| Solo las pruebas de sistema | `./mvnw verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT,FlujoHallazgoSistemaIT'` | `.\mvnw.cmd verify "-Dtest=NINGUNA" "-Dsurefire.failIfNoSpecifiedTests=false" "-Dit.test=FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT,FlujoHallazgoSistemaIT"` |
 | Interfaz (`*UIT`, necesita Chrome) | `./mvnw -q -Pui verify` | `.\mvnw.cmd -q -Pui verify` |
 | Carga (k6 instalado, app corriendo) | `k6 run perf/scripts/carga.js` | `k6 run perf/scripts/carga.js` |
 
@@ -37,15 +37,39 @@ Ninguna prueba necesita internet ni una clave de Anthropic: toda `@SpringBootTes
 
 ## Resultados
 
-Corrida completa del 26 de septiembre de 2026 (`./mvnw clean -Pui verify`, Windows 11, JDK 21, Chrome sin ventana):
+Corrida completa del 3 de octubre de 2026 sobre `main` (`./mvnw clean verify` y `./mvnw -Pui verify`, Windows 11, JDK 17, Chrome sin ventana):
 
 | Nivel | Pruebas | Pasan |
 |---|---|---|
-| Unitarias + ArchUnit + slice web | 205 | 205 |
+| Unitarias + ArchUnit + slice web | 227 | 227 |
 | Integración (H2) | 11 | 11 |
-| Sistema (HTTP) | 10 | 10 |
+| Sistema (HTTP) | 13 | 13 |
 | UI (Selenium) | 2 | 2 |
-| **Cobertura (jacoco)** | 79 % de instrucciones, 80 % de ramas | |
+| **Total** | **253** | **253** |
+
+**Cobertura (JaCoCo)**, sobre unitarias, integración y sistema:
+
+| Alcance | Instrucciones | Ramas |
+|---|---|---|
+| Todo el proyecto | 83,1 % | 83,3 % |
+| Paquete `domain` | 97,0 % | 87,3 % |
+
+Lo que baja el total es a propósito: el menú de consola del Corte 1 (`adaptadores.entrada.consola`, 0 %) es interactivo y no tiene pruebas automáticas, y `Main` solo arranca la demo. Las ramas sin cubrir de `config` son el caso "hay clave de Anthropic", porque ninguna prueba usa una clave real.
+
+Entre la primera corrida (26 de septiembre: 205 unitarias, 10 de sistema, 79 % / 80 %) y esta entraron las pruebas de las funciones agregadas al final: cerrar un caso con "Ya apareció", "La tengo yo" y las posibles coincidencias (`FlujoHallazgoSistemaIT`).
+
+### Registro de evidencias
+
+| Fecha | Persona | Nivel | Comando | Resultado | Archivo |
+|---|---|---|---|---|---|
+| 2026-09-24 | Santi | Consola del Corte 1 y pruebas | `./mvnw -q compile exec:java`, `./mvnw test` | Pasaron | `docs/evidencias/2026-09-24_santi_e1t1-*.png` |
+| 2026-09-25 | Santi | Unitarias (dominio y puertos) | `./mvnw test` | Pasaron | `docs/evidencias/2026-09-25_santi_e1t4-pruebas.png` |
+| 2026-09-25 | Mateo | Carga (k6) | `k6 run perf/scripts/baseline.js` y `carga.js` | Cumple el SLO | `perf/resultados/` |
+| 2026-09-28 | Equipo | Despliegue | Render | En línea | `docs/evidencias/despliegue-render.md` |
+| 2026-10-03 | Santi | Unitarias + ArchUnit + slice web | `./mvnw clean verify` | 227 de 227 | `docs/evidencias/2026-10-03_santi_pruebas-unitarias.txt` |
+| 2026-10-03 | Santi | Integración y sistema | `./mvnw clean verify` | 24 de 24 | `docs/evidencias/2026-10-03_santi_pruebas-integracion-y-sistema.txt` |
+| 2026-10-03 | Santi | Cobertura | `./mvnw clean verify` | 83,1 % / 83,3 %; `domain` 97,0 % | `docs/evidencias/2026-10-03_santi_cobertura.png` |
+| 2026-10-03 | Santi | UI (Selenium) | `./mvnw -Pui verify -Dit.test=FlujosPrincipalesUIT` | 2 de 2 | `docs/evidencias/2026-10-03_santi_pruebas-ui.txt` |
 
 ## Matriz de casos
 
@@ -73,6 +97,11 @@ Cada fila es un caso con la clase de equivalencia o el valor límite que represe
 | 18 | Sistema | Frase ininteligible | Inválida: no es un comando | 422 con ayuda y la lista no cambia de tamaño | `FlujoVozSistemaIT.fraseIninteligibleResponde422` |
 | 19 | Sistema | Listar por voz | Válida: comando de lectura | 200 y la lista no cambia | `FlujoVozSistemaIT.listarPorVozResponde200` |
 | 20 | Sistema | "Max, perro, Chía" por formulario, voz y asistente | Tres canales de entrada, un caso de uso | Mismo tipo, nombre, especie y zona | `FlujoVozSistemaIT.vozFormularioYAsistenteProducenElMismoReporte` |
+| 21 | Sistema | "La tengo yo" sobre un caso perdido | Válida: hallazgo con contacto asociado al caso | El caso muestra quién la tiene y su contacto; la familia lo cierra al recogerla | `FlujoHallazgoSistemaIT.hallazgoAsociadoAlCaso` |
+| 22 | Sistema | "La tengo yo" sin contacto | Inválida: contacto obligatorio en un hallazgo | 400 con el mensaje del dominio y el caso no cambia | `FlujoHallazgoSistemaIT.hallazgoSinContactoResponde400` |
+| 23 | Sistema | Pista "La vi" | Válida: pista sin contacto público | No muestra el contacto de quien la dejó ni cuenta como hallazgo | `FlujoHallazgoSistemaIT.pistaNoMuestraContacto` |
+| 24 | Integración | Buscar en H2 un id que no existe | Inválida: id inexistente | `Optional` vacío, sin excepción | `RepositorioReportesH2IT.idInexistente` |
+| 25 | Integración | Listar activos | Partición por estado: ACTIVO frente a RESUELTO y CERRADO | Solo aparecen los activos | `RepositorioReportesH2IT.listarActivosFiltraPorEstado` |
 
 Las pruebas de integración y sistema nunca afirman un id fijo ni un tamaño absoluto de lista: la base no se revierte entre pruebas (el servidor atiende en otro hilo), así que cada prueba usa el id que devolvió su propio POST y compara tamaños antes y después.
 
@@ -85,4 +114,26 @@ Las pruebas de sistema encontraron dos defectos que las unitarias y el slice web
 
 ## Persistencia y carga
 
-La sección detallada de persistencia (H2, datos de ejemplo y consultas) y la de carga las completa la épica 03. Mientras tanto, los resultados de carga están en [`perf/README.md`](../perf/README.md): con 50 usuarios el p95 fue 89 ms frente a un SLO de 500 ms, 0 % de errores y 79 req/s frente a un mínimo de 30.
+### Persistencia (H2)
+
+- **Qué es:** `RepositorioReportesH2` es el adaptador de salida que implementa el puerto `RepositorioReportes` con Spring Data JPA (`ReporteJpaRepository`, `ReporteEntity`, `AvistamientoEntity`). Las entidades JPA viven solo en `adaptadores/salida/persistencia/h2`; el dominio no sabe que existen, y lo vigila ArchUnit con la regla `soloLaPersistenciaUsaJpa`.
+- **La base:** H2 en memoria (`jdbc:h2:mem:petfinder`). Con la app corriendo se consulta en `http://localhost:8080/h2-console`, usuario `sa`, sin clave.
+- **Datos de ejemplo:** al arrancar, `DatosDeEjemplo` carga 4 casos para que la demo no empiece vacía. Se apaga con `petfinder.datos-ejemplo=false`. Lo comprueba `DatosDeEjemploIT`.
+- **Qué prueban las 11 de integración:**
+  - `RepositorioReportesH2IT` (7): ida y vuelta de pérdidas y hallazgos (mascota, contacto, coordenadas, descripción), id inexistente, filtro de activos por estado, actualización de estado, avistamientos guardados con su reporte y fecha de creación conservada al reconstruir.
+  - `ServicioReportesH2IT` (3): la aplicación usa de verdad el adaptador H2, y registrar, consultar y resolver pasan por la base.
+  - `DatosDeEjemploIT` (1): los casos de ejemplo se cargan al arrancar.
+- **Límite declarado:** los datos se pierden al reiniciar, y la API no se puede escalar a varias instancias porque cada una tendría su propia base en memoria. Cambiar a PostgreSQL es otro adaptador del mismo puerto, sin tocar dominio ni servicios.
+
+### Carga (k6)
+
+El detalle completo (SLO definido antes de correr, escenario, entorno y análisis) está en [`perf/README.md`](../perf/README.md). Resumen:
+
+| Prueba | Usuarios | p95 | Errores | req/s | ¿Cumple el SLO? |
+|---|---|---|---|---|---|
+| Baseline | 5 durante 1 min | 14,0 ms | 0 % (0 de 590) | 9,8 | Sí en latencia y errores |
+| Carga | hasta 50 durante 4 min 30 s | **89,2 ms** (SLO 500 ms) | **0 %** (0 de 21.442) | **79,2** (mínimo 30) | **Sí, los tres criterios** |
+
+- **Concurrencia:** después de la carga, `SELECT COUNT(*) FROM REPORTES` dio 10.725 = 10.721 respuestas 201 + 4 casos de ejemplo. No se perdió ni se duplicó ningún reporte.
+- **Cuello de botella:** `ver reportes` (p95 de 106 ms frente a 15,7 ms de registrar). No está paginado y hace N+1 consultas: una por cada pérdida para traer sus avistamientos. La corrección (`JOIN FETCH` o un tope) vive solo en el adaptador de persistencia, gracias al puerto.
+- **Evidencia:** `perf/resultados/baseline.json`, `carga.json`, `concurrencia.json`, `consultas-n-mas-1.json` y las imágenes `resumen-k6-*.png`.

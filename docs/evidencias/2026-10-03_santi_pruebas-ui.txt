@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: petfinder.ui.FlujosPrincipalesUIT
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 24.45 s -- in petfinder.ui.FlujosPrincipalesUIT
