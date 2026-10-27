@@ -1,14 +1,18 @@
-# Pet Finder en un contenedor, en dos etapas: la primera compila con el JDK y la segunda solo
-# corre el jar con el JRE, así la imagen final no arrastra Maven ni el código fuente.
+# syntax=docker/dockerfile:1
 
-# ---------- Etapa 1: compilar ----------
-FROM eclipse-temurin:17-jdk AS compilar
-WORKDIR /app
+# Pet Finder en un contenedor, en dos etapas: la primera compila con Maven y la segunda solo
+# corre el .jar con el JRE, así la imagen final no arrastra Maven, el JDK ni el código fuente.
 
-# El wrapper primero: descarga Maven una sola vez y esa capa se reutiliza mientras no cambie.
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-COPY src/ src/
+# ---------- Etapa 1: compilar el .jar con Maven (las pruebas ya corrieron con ./mvnw verify) ----------
+FROM maven:3.9.16-eclipse-temurin-17-noble AS build
+WORKDIR /src
+
+# Primero solo el pom: las dependencias quedan en una capa que se reutiliza mientras el pom no cambie
+COPY pom.xml .
+RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -q dependency:go-offline
+
+# Después el código
+COPY src ./src
 
 # Clave gratuita de CARTO para las teselas del mapa (opcional). Se pasa al construir:
 #   docker build --build-arg PETFINDER_CLAVE_CARTO=tu-clave .
@@ -20,20 +24,27 @@ RUN if [ -n "$PETFINDER_CLAVE_CARTO" ]; then \
         > src/main/resources/static/js/config-local.js; \
     fi
 
-RUN chmod +x mvnw && ./mvnw -q -DskipTests package
+RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -q package -DskipTests \
+ && cp target/pet-finder.jar /app.jar
 
-# ---------- Etapa 2: correr ----------
-FROM eclipse-temurin:17-jre
-WORKDIR /app
+# ---------- Etapa 2: imagen final solo con el JRE y el .jar ----------
+FROM eclipse-temurin:17.0.20.1_1-jre-noble
 
-# Las fechas del servidor no llevan zona horaria: con la hora de Bogotá, "hace 5 min" es cierto en Colombia.
+# Las fechas del servidor no llevan zona horaria: con la hora de Bogotá, "hace 5 min" es cierto en Colombia
 ENV TZ=America/Bogota
 
-# Sin permisos de administrador: si algo se filtra, no llega al sistema.
-RUN useradd --system --uid 10001 --no-create-home app
-COPY --from=compilar --chown=app /app/target/pet-finder.jar /app/pet-finder.jar
+# Usuario sin privilegios: si alguien compromete la aplicación, no es root dentro del contenedor
+RUN groupadd --system app && useradd --system --gid app --no-create-home app
+WORKDIR /app
+COPY --from=build --chown=app:app /app.jar app.jar
 USER app
 
-# Render define PORT y application.properties lo lee (server.port=${PORT:8080}).
+# Render define PORT y application.properties lo lee (server.port=${PORT:8080}); en local es 8080
 EXPOSE 8080
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-jar", "/app/pet-finder.jar"]
+
+# Docker y Compose consultan este endpoint para saber si la aplicación está lista (Spring Boot Actuator)
+HEALTHCHECK --interval=10s --timeout=3s --start-period=60s --retries=5 \
+  CMD curl -fsS "http://localhost:${PORT:-8080}/actuator/health/readiness" || exit 1
+
+# La JVM usa como máximo el 75 % de la memoria que el contenedor tenga asignada
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
