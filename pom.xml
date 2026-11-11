@@ -61,6 +61,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-h2console</artifactId>
         </dependency>
+        <!-- Migraciones del esquema (S7, decisión D3): Flyway crea las tablas y Hibernate solo las valida.
+             El segundo módulo es el soporte de PostgreSQL, que desde Flyway 10 va aparte. Versiones: las de Spring Boot. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
 
         <!-- Adaptador de salida: extractor con Claude (SDK oficial de Java) -->
         <dependency>

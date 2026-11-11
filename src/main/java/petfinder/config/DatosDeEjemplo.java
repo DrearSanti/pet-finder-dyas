@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.stereotype.Component;
 
 import petfinder.application.port.entrada.GestionReportes;
+import petfinder.application.port.salida.RepositorioReportes;
 import petfinder.domain.model.Contacto;
 import petfinder.domain.model.Mascota;
 import petfinder.domain.model.SolicitudReporte;
@@ -14,8 +15,9 @@ import petfinder.domain.model.TipoReporte;
 import petfinder.domain.model.Ubicacion;
 
 /**
- * Carga casos de ejemplo al arrancar, porque H2 en memoria empieza vacío en
- * cada reinicio (también en Render). Entra por el puerto GestionReportes, como
+ * Carga casos de ejemplo al arrancar cuando la base está vacía: H2 en memoria
+ * empieza vacío en cada reinicio, pero PostgreSQL no, y cargarlos otra vez
+ * duplicaría a Luna, Max, la gata y Copito en cada reinicio. Entra por el puerto GestionReportes, como
  * cualquier otro adaptador: los datos pasan por las mismas validaciones.
  * Solo corre en la aplicación web (la demo de consola conserva sus PF-001 y
  * PF-002 del Corte 1) y se apaga con petfinder.datos-ejemplo=false.
@@ -26,13 +28,19 @@ import petfinder.domain.model.Ubicacion;
 public class DatosDeEjemplo implements ApplicationRunner {
 
     private final GestionReportes gestion;
+    private final RepositorioReportes repositorio;
 
-    public DatosDeEjemplo(GestionReportes gestion) {
+    public DatosDeEjemplo(GestionReportes gestion, RepositorioReportes repositorio) {
         this.gestion = gestion;
+        this.repositorio = repositorio;
     }
 
     @Override
     public void run(ApplicationArguments args) {
+        // Cualquier reporte cuenta, también los cerrados: listarActivos() no basta.
+        if (repositorio.ultimoNumeroDeId() > 0) {
+            return;
+        }
         gestion.registrar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
                 new Ubicacion("Cedritos", "Parque de la 147", 4.7235, -74.0417),
                 "Se escapó del conjunto esta tarde. Es tímida: si la ves, no la persigas.",

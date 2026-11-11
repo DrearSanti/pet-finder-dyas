@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import petfinder.domain.model.GeneradorIdReportes;
 import petfinder.domain.model.ReporteMascota;
 import petfinder.application.port.salida.RepositorioReportes;
 /**
@@ -43,5 +44,13 @@ public class RepositorioReportesEnMemoria implements RepositorioReportes {
         return reportes.values().stream()
                 .filter(ReporteMascota::estaActivo)
                 .toList();
+    }
+
+    @Override
+    public int ultimoNumeroDeId() {
+        return reportes.keySet().stream()
+                .mapToInt(GeneradorIdReportes::numeroDe)
+                .max()
+                .orElse(0);
     }
 }
