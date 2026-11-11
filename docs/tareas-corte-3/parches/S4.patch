@@ -1,0 +1,173 @@
+diff --git a/src/main/java/petfinder/Main.java b/src/main/java/petfinder/Main.java
+--- a/src/main/java/petfinder/Main.java
++++ b/src/main/java/petfinder/Main.java
+@@ -4,8 +4,8 @@
+ import org.springframework.boot.builder.SpringApplicationBuilder;
+ import org.springframework.context.ConfigurableApplicationContext;
+ 
+-import petfinder.application.service.ServicioAvistamientos;
+-import petfinder.application.service.ServicioReportes;
++import petfinder.application.port.entrada.RegistroAvistamientos;
++import petfinder.application.port.entrada.GestionReportes;
+ import petfinder.domain.observer.AlertaPropietarioObserver;
+ import petfinder.domain.observer.AuditoriaObserver;
+ import petfinder.domain.observer.PublicadorAvistamientos;
+@@ -30,8 +30,8 @@
+                 .properties("spring.main.banner-mode=off", "logging.level.root=WARN")
+                 .run(args)) {
+ 
+-            ServicioReportes servicioReportes = contexto.getBean(ServicioReportes.class);
+-            ServicioAvistamientos servicioAvistamientos = contexto.getBean(ServicioAvistamientos.class);
++            GestionReportes servicioReportes = contexto.getBean(GestionReportes.class);
++            RegistroAvistamientos servicioAvistamientos = contexto.getBean(RegistroAvistamientos.class);
+ 
+             if (tieneBandera(args, "--menu")) {
+                 new MenuConsola(servicioReportes, servicioAvistamientos).ejecutar();
+diff --git a/src/main/java/petfinder/adaptadores/entrada/consola/EscenarioDemostracion.java b/src/main/java/petfinder/adaptadores/entrada/consola/EscenarioDemostracion.java
+--- a/src/main/java/petfinder/adaptadores/entrada/consola/EscenarioDemostracion.java
++++ b/src/main/java/petfinder/adaptadores/entrada/consola/EscenarioDemostracion.java
+@@ -2,8 +2,8 @@
+ 
+ import java.time.LocalDateTime;
+ 
+-import petfinder.application.service.ServicioAvistamientos;
+-import petfinder.application.service.ServicioReportes;
++import petfinder.application.port.entrada.RegistroAvistamientos;
++import petfinder.application.port.entrada.GestionReportes;
+ import petfinder.domain.exception.DominioException;
+ import petfinder.domain.model.Avistamiento;
+ import petfinder.domain.model.Contacto;
+@@ -26,14 +26,14 @@
+  */
+ public class EscenarioDemostracion {
+ 
+-    private final ServicioReportes servicioReportes;
+-    private final ServicioAvistamientos servicioAvistamientos;
++    private final GestionReportes servicioReportes;
++    private final RegistroAvistamientos servicioAvistamientos;
+     private final PublicadorAvistamientos publicador;
+     private final AlertaPropietarioObserver alerta;
+     private final AuditoriaObserver auditoria;
+ 
+-    public EscenarioDemostracion(ServicioReportes servicioReportes,
+-                                 ServicioAvistamientos servicioAvistamientos,
++    public EscenarioDemostracion(GestionReportes servicioReportes,
++                                 RegistroAvistamientos servicioAvistamientos,
+                                  PublicadorAvistamientos publicador,
+                                  AlertaPropietarioObserver alerta,
+                                  AuditoriaObserver auditoria) {
+diff --git a/src/main/java/petfinder/adaptadores/entrada/consola/MenuConsola.java b/src/main/java/petfinder/adaptadores/entrada/consola/MenuConsola.java
+--- a/src/main/java/petfinder/adaptadores/entrada/consola/MenuConsola.java
++++ b/src/main/java/petfinder/adaptadores/entrada/consola/MenuConsola.java
+@@ -4,8 +4,8 @@
+ import java.util.List;
+ import java.util.Scanner;
+ 
+-import petfinder.application.service.ServicioAvistamientos;
+-import petfinder.application.service.ServicioReportes;
++import petfinder.application.port.entrada.RegistroAvistamientos;
++import petfinder.application.port.entrada.GestionReportes;
+ import petfinder.domain.exception.DominioException;
+ import petfinder.domain.model.Avistamiento;
+ import petfinder.domain.model.Contacto;
+@@ -26,15 +26,15 @@
+  */
+ public class MenuConsola {
+ 
+-    private final ServicioReportes servicioReportes;
+-    private final ServicioAvistamientos servicioAvistamientos;
++    private final GestionReportes servicioReportes;
++    private final RegistroAvistamientos servicioAvistamientos;
+     private final Scanner entrada = new Scanner(System.in);
+ 
+     /** Consecutivo local de avistamientos; los reportes los numera el dominio. */
+     private int consecutivoAvistamiento = 0;
+ 
+-    public MenuConsola(ServicioReportes servicioReportes,
+-                       ServicioAvistamientos servicioAvistamientos) {
++    public MenuConsola(GestionReportes servicioReportes,
++                       RegistroAvistamientos servicioAvistamientos) {
+         this.servicioReportes = servicioReportes;
+         this.servicioAvistamientos = servicioAvistamientos;
+     }
+diff --git a/src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java b/src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java
+--- a/src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java
++++ b/src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java
+@@ -7,12 +7,18 @@
+ import com.tngtech.archunit.junit.ArchTest;
+ import com.tngtech.archunit.lang.ArchRule;
+ 
++import petfinder.application.port.entrada.AsistenteReportes;
++import petfinder.application.port.entrada.GestionReportes;
++import petfinder.application.port.salida.RepositorioReportes;
++
+ /**
+  * Reglas de la arquitectura hexagonal convertidas en pruebas: si alguien
+- * rompe la dirección de las dependencias, mvnw test se pone en rojo.
++ * rompe la dirección de las dependencias, mvnw test se pone en rojo, y en el
++ * pipeline se pone en rojo el check reglas-arquitectura.
+  *
+- * Las reglas sobre paquetes que todavía no existen usan allowEmptyShould,
+- * porque ArchUnit falla por defecto cuando una regla no encuentra clases.
++ * Cada regla protege una frontera que nombra ADR-001. Ninguna usa
++ * allowEmptyShould: si un paquete cambia de nombre y la regla deja de
++ * encontrar clases, ArchUnit falla en vez de pasar sin revisar nada.
+  */
+ @AnalyzeClasses(packages = "petfinder", importOptions = ImportOption.DoNotIncludeTests.class)
+ class ReglasArquitecturaTest {
+@@ -31,11 +37,51 @@
+                     "org.springframework..", "jakarta.persistence..", "com.anthropic..",
+                     "petfinder.adaptadores..", "petfinder.config..");
+ 
++    /**
++     * Antes solo miraba la web, y la consola usaba ServicioReportes y
++     * ServicioAvistamientos directamente. Ahora cubre todo adaptadores.entrada:
++     * una forma nueva de entrar al sistema (consola, web, voz, un chat) solo
++     * puede hablar con los puertos de entrada.
++     */
+     @ArchTest
+-    static final ArchRule laWebSoloHablaConPuertos = noClasses()
+-            .that().resideInAPackage("petfinder.adaptadores.entrada.web..")
+-            .should().dependOnClassesThat().resideInAPackage("petfinder.application.service..")
+-            .allowEmptyShould(true);
++    static final ArchRule lasEntradasSoloHablanConPuertos = noClasses()
++            .that().resideInAPackage("petfinder.adaptadores.entrada..")
++            .should().dependOnClassesThat().resideInAPackage("petfinder.application.service..");
++
++    /** Cambiar la base de datos no puede obligar a tocar el extractor con Claude, ni al revés. */
++    @ArchTest
++    static final ArchRule laPersistenciaNoConoceOtrosAdaptadores = noClasses()
++            .that().resideInAPackage("petfinder.adaptadores.salida.persistencia..")
++            .should().dependOnClassesThat().resideInAnyPackage(
++                    "petfinder.adaptadores.entrada..", "petfinder.adaptadores.salida.ia..");
++
++    @ArchTest
++    static final ArchRule laIaNoConoceOtrosAdaptadores = noClasses()
++            .that().resideInAPackage("petfinder.adaptadores.salida.ia..")
++            .should().dependOnClassesThat().resideInAnyPackage(
++                    "petfinder.adaptadores.entrada..", "petfinder.adaptadores.salida.persistencia..");
++
++    /**
++     * config es el composition root: el único lugar que nombra RepositorioReportesH2,
++     * ExtractorClaude y compañía. Si otra clase los usara, cambiar de adaptador
++     * dejaría de ser "cambiar una línea de config".
++     */
++    @ArchTest
++    static final ArchRule soloConfigConoceLosAdaptadoresDeSalida = noClasses()
++            .that().resideOutsideOfPackages("petfinder.config..", "petfinder.adaptadores.salida..")
++            .should().dependOnClassesThat().resideInAPackage("petfinder.adaptadores.salida..");
++
++    /**
++     * El asistente nunca publica (amenaza T8 de docs/seguridad.md): aunque una
++     * frase manipule al modelo, quien implementa AsistenteReportes no tiene cómo
++     * llegar a GestionReportes ni al repositorio. Publicar siempre es un
++     * POST /api/reportes que dispara la persona.
++     */
++    @ArchTest
++    static final ArchRule elAsistenteNuncaPublica = noClasses()
++            .that().implement(AsistenteReportes.class)
++            .should().dependOnClassesThat().areAssignableTo(GestionReportes.class)
++            .orShould().dependOnClassesThat().areAssignableTo(RepositorioReportes.class);
+ 
+     @ArchTest
+     static final ArchRule soloElAdaptadorDeIaUsaElSdkDeAnthropic = noClasses()

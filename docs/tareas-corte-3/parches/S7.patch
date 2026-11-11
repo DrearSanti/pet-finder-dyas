@@ -1,0 +1,495 @@
+diff --git a/docker-compose.yml b/docker-compose.yml
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -14,9 +14,8 @@
+       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-petfinder}
+       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Defina POSTGRES_USER (ver .env.example)}
+       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD (ver .env.example)}
+-      # Las tablas se recrean en cada arranque de la app. El generador de IDs (PF-001...) vive en
+-      # memoria y vuelve a empezar al reiniciar; con "update" pisaría reportes ya guardados.
+-      SPRING_JPA_HIBERNATE_DDL_AUTO: create
++      # Sin SPRING_JPA_HIBERNATE_DDL_AUTO: el esquema lo crea Flyway al arrancar (db/migration) y Hibernate
++      # solo lo valida. Los casos sobreviven a docker compose restart; down -v sí borra la base.
+       # La consola de H2 no aplica con PostgreSQL
+       SPRING_H2_CONSOLE_ENABLED: "false"
+       # Asistente con Claude (opcional: sin clave funciona con reglas)
+diff --git a/pom.xml b/pom.xml
+--- a/pom.xml
++++ b/pom.xml
+@@ -61,6 +61,16 @@
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-h2console</artifactId>
+         </dependency>
++        <!-- Migraciones del esquema (S7, decisión D3): Flyway crea las tablas y Hibernate solo las valida.
++             El segundo módulo es el soporte de PostgreSQL, que desde Flyway 10 va aparte. Versiones: las de Spring Boot. -->
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-flyway</artifactId>
++        </dependency>
++        <dependency>
++            <groupId>org.flywaydb</groupId>
++            <artifactId>flyway-database-postgresql</artifactId>
++        </dependency>
+ 
+         <!-- Adaptador de salida: extractor con Claude (SDK oficial de Java) -->
+         <dependency>
+diff --git a/src/main/java/petfinder/adaptadores/salida/persistencia/h2/ReporteJpaRepository.java b/src/main/java/petfinder/adaptadores/salida/persistencia/h2/ReporteJpaRepository.java
+--- a/src/main/java/petfinder/adaptadores/salida/persistencia/h2/ReporteJpaRepository.java
++++ b/src/main/java/petfinder/adaptadores/salida/persistencia/h2/ReporteJpaRepository.java
+@@ -3,6 +3,7 @@
+ import java.util.List;
+ 
+ import org.springframework.data.jpa.repository.JpaRepository;
++import org.springframework.data.jpa.repository.Query;
+ 
+ import petfinder.domain.model.EstadoReporte;
+ 
+@@ -10,4 +11,8 @@
+ public interface ReporteJpaRepository extends JpaRepository<ReporteEntity, String> {
+ 
+     List<ReporteEntity> findByEstadoOrderByFechaCreacionDesc(EstadoReporte estado);
++
++    /** Solo los identificadores: al arrancar no hace falta cargar los reportes completos. */
++    @Query("select r.id from ReporteEntity r")
++    List<String> listarIds();
+ }
+diff --git a/src/main/java/petfinder/adaptadores/salida/persistencia/h2/RepositorioReportesH2.java b/src/main/java/petfinder/adaptadores/salida/persistencia/h2/RepositorioReportesH2.java
+--- a/src/main/java/petfinder/adaptadores/salida/persistencia/h2/RepositorioReportesH2.java
++++ b/src/main/java/petfinder/adaptadores/salida/persistencia/h2/RepositorioReportesH2.java
+@@ -9,6 +9,7 @@
+ import petfinder.domain.model.Avistamiento;
+ import petfinder.domain.model.Contacto;
+ import petfinder.domain.model.EstadoReporte;
++import petfinder.domain.model.GeneradorIdReportes;
+ import petfinder.domain.model.Mascota;
+ import petfinder.domain.model.ReporteEncontrada;
+ import petfinder.domain.model.ReporteMascota;
+@@ -58,6 +59,15 @@
+         return jpa.findByEstadoOrderByFechaCreacionDesc(EstadoReporte.ACTIVO).stream()
+                 .map(RepositorioReportesH2::aDominio)
+                 .toList();
++    }
++
++    @Override
++    @Transactional(readOnly = true)
++    public int ultimoNumeroDeId() {
++        return jpa.listarIds().stream()
++                .mapToInt(GeneradorIdReportes::numeroDe)
++                .max()
++                .orElse(0);
+     }
+ 
+     private static void copiar(ReporteMascota reporte, ReporteEntity fila) {
+diff --git a/src/main/java/petfinder/adaptadores/salida/persistencia/memoria/RepositorioReportesEnMemoria.java b/src/main/java/petfinder/adaptadores/salida/persistencia/memoria/RepositorioReportesEnMemoria.java
+--- a/src/main/java/petfinder/adaptadores/salida/persistencia/memoria/RepositorioReportesEnMemoria.java
++++ b/src/main/java/petfinder/adaptadores/salida/persistencia/memoria/RepositorioReportesEnMemoria.java
+@@ -5,6 +5,7 @@
+ import java.util.Map;
+ import java.util.Optional;
+ 
++import petfinder.domain.model.GeneradorIdReportes;
+ import petfinder.domain.model.ReporteMascota;
+ import petfinder.application.port.salida.RepositorioReportes;
+ /**
+@@ -43,5 +44,13 @@
+         return reportes.values().stream()
+                 .filter(ReporteMascota::estaActivo)
+                 .toList();
++    }
++
++    @Override
++    public int ultimoNumeroDeId() {
++        return reportes.keySet().stream()
++                .mapToInt(GeneradorIdReportes::numeroDe)
++                .max()
++                .orElse(0);
+     }
+ }
+\ No newline at end of file
+diff --git a/src/main/java/petfinder/application/port/salida/RepositorioReportes.java b/src/main/java/petfinder/application/port/salida/RepositorioReportes.java
+--- a/src/main/java/petfinder/application/port/salida/RepositorioReportes.java
++++ b/src/main/java/petfinder/application/port/salida/RepositorioReportes.java
+@@ -35,4 +35,15 @@
+      * @return lista de reportes activos
+      */
+     List<ReporteMascota> listarActivos();
++
++    /**
++     * Mayor número usado en un identificador PF-, o 0 si no hay reportes.
++     *
++     * Lo pide config al arrancar: el generador sigue desde ahí en vez de
++     * empezar en PF-001 y pisar casos guardados, y DatosDeEjemplo no carga
++     * nada sobre una base que ya tiene casos, aunque estén cerrados.
++     *
++     * @return el mayor número, comparado como número y no como texto
++     */
++    int ultimoNumeroDeId();
+ }
+\ No newline at end of file
+diff --git a/src/main/java/petfinder/config/ConfiguracionPetFinder.java b/src/main/java/petfinder/config/ConfiguracionPetFinder.java
+--- a/src/main/java/petfinder/config/ConfiguracionPetFinder.java
++++ b/src/main/java/petfinder/config/ConfiguracionPetFinder.java
+@@ -34,9 +34,13 @@
+ @Configuration
+ public class ConfiguracionPetFinder {
+ 
++    /**
++     * Arranca después del último PF- guardado: con PostgreSQL la base sobrevive
++     * a los reinicios y el contador en memoria no.
++     */
+     @Bean
+-    public GeneradorIdReportes generadorIdReportes() {
+-        return new GeneradorIdReportes();
++    public GeneradorIdReportes generadorIdReportes(RepositorioReportes repositorio) {
++        return new GeneradorIdReportes(repositorio.ultimoNumeroDeId());
+     }
+ 
+     @Bean
+diff --git a/src/main/java/petfinder/config/DatosDeEjemplo.java b/src/main/java/petfinder/config/DatosDeEjemplo.java
+--- a/src/main/java/petfinder/config/DatosDeEjemplo.java
++++ b/src/main/java/petfinder/config/DatosDeEjemplo.java
+@@ -7,6 +7,7 @@
+ import org.springframework.stereotype.Component;
+ 
+ import petfinder.application.port.entrada.GestionReportes;
++import petfinder.application.port.salida.RepositorioReportes;
+ import petfinder.domain.model.Contacto;
+ import petfinder.domain.model.Mascota;
+ import petfinder.domain.model.SolicitudReporte;
+@@ -14,8 +15,9 @@
+ import petfinder.domain.model.Ubicacion;
+ 
+ /**
+- * Carga casos de ejemplo al arrancar, porque H2 en memoria empieza vacío en
+- * cada reinicio (también en Render). Entra por el puerto GestionReportes, como
++ * Carga casos de ejemplo al arrancar cuando la base está vacía: H2 en memoria
++ * empieza vacío en cada reinicio, pero PostgreSQL no, y cargarlos otra vez
++ * duplicaría a Luna, Max, la gata y Copito en cada reinicio. Entra por el puerto GestionReportes, como
+  * cualquier otro adaptador: los datos pasan por las mismas validaciones.
+  * Solo corre en la aplicación web (la demo de consola conserva sus PF-001 y
+  * PF-002 del Corte 1) y se apaga con petfinder.datos-ejemplo=false.
+@@ -26,13 +28,19 @@
+ public class DatosDeEjemplo implements ApplicationRunner {
+ 
+     private final GestionReportes gestion;
++    private final RepositorioReportes repositorio;
+ 
+-    public DatosDeEjemplo(GestionReportes gestion) {
++    public DatosDeEjemplo(GestionReportes gestion, RepositorioReportes repositorio) {
+         this.gestion = gestion;
++        this.repositorio = repositorio;
+     }
+ 
+     @Override
+     public void run(ApplicationArguments args) {
++        // Cualquier reporte cuenta, también los cerrados: listarActivos() no basta.
++        if (repositorio.ultimoNumeroDeId() > 0) {
++            return;
++        }
+         gestion.registrar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
+                 new Ubicacion("Cedritos", "Parque de la 147", 4.7235, -74.0417),
+                 "Se escapó del conjunto esta tarde. Es tímida: si la ves, no la persigas.",
+diff --git a/src/main/java/petfinder/domain/model/GeneradorIdReportes.java b/src/main/java/petfinder/domain/model/GeneradorIdReportes.java
+--- a/src/main/java/petfinder/domain/model/GeneradorIdReportes.java
++++ b/src/main/java/petfinder/domain/model/GeneradorIdReportes.java
+@@ -1,6 +1,8 @@
+ package petfinder.domain.model;
+ 
+ import java.util.concurrent.atomic.AtomicInteger;
++import java.util.regex.Matcher;
++import java.util.regex.Pattern;
+ 
+ /**
+  * Entrega identificadores consecutivos con el formato PF-001.
+@@ -14,17 +16,52 @@
+  * generar identificadores en este alcance. Crear la abstraccion por si acaso
+  * seria generalidad especulativa; la inversion de dependencias se aplica
+  * donde si hay una frontera real de sustitucion, que es el almacenamiento.
++ *
++ * Límite conocido: el contador vive en el proceso. Con una sola instancia de
++ * la app basta; dos instancias contra la misma base repetirían números.
+  */
+ public class GeneradorIdReportes {
+ 
++    private static final Pattern FORMATO = Pattern.compile("PF-(\\d{1,9})");
++
+     /**
+      * AtomicInteger y no int: con la API, dos peticiones simultáneas podían
+      * leer el mismo valor con secuencia++ y recibir el mismo PF-00X, y la
+      * segunda sobrescribía a la primera en el repositorio.
+      */
+-    private final AtomicInteger secuencia = new AtomicInteger();
++    private final AtomicInteger secuencia;
+ 
++    /** Base vacía: el primer identificador es PF-001. */
++    public GeneradorIdReportes() {
++        this(0);
++    }
++
++    /**
++     * Arranca después del último número que ya está en la base. Con la base
++     * persistente (PostgreSQL), empezar siempre en 0 hacía que el primer POST
++     * tras un reinicio devolviera 201 con PF-001 y pisara el reporte guardado.
++     */
++    public GeneradorIdReportes(int ultimoNumeroUsado) {
++        if (ultimoNumeroUsado < 0) {
++            throw new IllegalArgumentException("El último número usado no puede ser negativo: " + ultimoNumeroUsado);
++        }
++        this.secuencia = new AtomicInteger(ultimoNumeroUsado);
++    }
++
+     public String siguiente() {
+         return String.format("PF-%03d", secuencia.incrementAndGet());
++    }
++
++    /**
++     * Número de un identificador PF-, o 0 si no tiene ese formato. Existe para
++     * comparar como número: como texto, "PF-1000" queda antes que "PF-999" y
++     * el máximo saldría mal.
++     */
++    public static int numeroDe(String id) {
++        if (id == null) {
++            return 0;
++        }
++        Matcher m = FORMATO.matcher(id);
++        return m.matches() ? Integer.parseInt(m.group(1)) : 0;
+     }
+ }
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+--- a/src/main/resources/application.properties
++++ b/src/main/resources/application.properties
+@@ -9,12 +9,16 @@
+ # Activa /actuator/health/readiness, que usa el HEALTHCHECK del Dockerfile
+ management.endpoint.health.probes.enabled=true
+ 
+-# H2 en memoria: los datos se pierden al reiniciar (límite declarado)
++# Sin SPRING_DATASOURCE_URL la app usa H2 en memoria (local y pruebas): los datos se pierden al reiniciar.
++# Con PostgreSQL (Compose, Render) los datos quedan en la base.
+ spring.datasource.url=jdbc:h2:mem:petfinder;DB_CLOSE_DELAY=-1
+ spring.datasource.username=sa
+ spring.datasource.password=
+ spring.jpa.open-in-view=false
++# El esquema lo crea Flyway (src/main/resources/db/migration) y Hibernate solo lo compara con las
++# entidades: si no coinciden, la app no arranca, en vez de crear o borrar tablas por su cuenta.
++spring.jpa.hibernate.ddl-auto=validate
+ spring.h2.console.enabled=true
+ 
+-# Casos de ejemplo al arrancar (H2 empieza vacío en cada reinicio)
++# Casos de ejemplo al arrancar, solo si la base no tiene ningún reporte
+ petfinder.datos-ejemplo=true
+diff --git a/src/main/resources/db/migration/V1__esquema_inicial.sql b/src/main/resources/db/migration/V1__esquema_inicial.sql
+new file mode 100644
+--- /dev/null
++++ b/src/main/resources/db/migration/V1__esquema_inicial.sql
+@@ -0,0 +1,48 @@
++-- Esquema inicial de Pet Finder (Corte 3, tarea S7). Desde aquí las tablas las crea Flyway y Hibernate
++-- solo las valida (spring.jpa.hibernate.ddl-auto=validate). Sale de ReporteEntity y AvistamientoEntity.
++-- SQL común: el mismo archivo corre en H2 (local y pruebas) y en PostgreSQL (Compose y Render).
++-- Los enum van como texto (EnumType.STRING) y sin CHECK: en H2 2.4 un CHECK con IN (...) falla con
++-- "Check constraint invalid ... The database has been closed" cuando se cierra la conexión que creó la tabla.
++-- Nunca se edita un archivo ya aplicado: Flyway guarda su checksum y la app no arranca si cambia.
++
++create table reportes (
++    id                  varchar(255)  not null,
++    tipo                varchar(255)  not null,
++    estado              varchar(255)  not null,
++    fecha_creacion      timestamp(6)  not null,
++    zona                varchar(255),
++    referencia          varchar(255),
++    latitud             float(53),
++    longitud            float(53),
++    descripcion         varchar(2000),
++    contacto_nombre     varchar(255),
++    contacto_medio      varchar(255),
++    mascota_nombre      varchar(255),
++    mascota_especie     varchar(255),
++    mascota_raza        varchar(255),
++    mascota_color       varchar(255),
++    mascota_senas       varchar(255),
++    descripcion_mascota varchar(2000),
++    constraint pk_reportes primary key (id)
++);
++
++create index idx_reportes_estado on reportes (estado);
++
++create table avistamientos (
++    id              varchar(255)  not null,
++    reporte_id      varchar(255)  not null,
++    fecha_hora      timestamp(6)  not null,
++    zona            varchar(255),
++    referencia      varchar(255),
++    latitud         float(53),
++    longitud        float(53),
++    descripcion     varchar(2000),
++    contacto_nombre varchar(255),
++    contacto_medio  varchar(255),
++    tipo            varchar(255),
++    constraint pk_avistamientos primary key (id),
++    constraint fk_avistamientos_reporte foreign key (reporte_id) references reportes (id)
++);
++
++-- PostgreSQL no indexa solo las llaves foráneas; la lista con sus avistamientos (S8) busca por aquí.
++create index idx_avistamientos_reporte on avistamientos (reporte_id);
+diff --git a/src/test/java/petfinder/domain/GeneradorIdReportesTest.java b/src/test/java/petfinder/domain/GeneradorIdReportesTest.java
+--- a/src/test/java/petfinder/domain/GeneradorIdReportesTest.java
++++ b/src/test/java/petfinder/domain/GeneradorIdReportesTest.java
+@@ -1,6 +1,7 @@
+ package petfinder.domain;
+ 
+ import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertThrows;
+ 
+ import java.util.Set;
+ import java.util.concurrent.ConcurrentHashMap;
+@@ -33,6 +34,41 @@
+         String siguiente = generador.siguiente();
+         // Assert
+         assertEquals("PF-1000", siguiente);
++    }
++
++    @Test
++    @DisplayName("Con la base en PF-041, el siguiente identificador es PF-042")
++    void sigueDespuesDelUltimoGuardado() {
++        // Arrange
++        GeneradorIdReportes generador = new GeneradorIdReportes(41);
++        // Act
++        String siguiente = generador.siguiente();
++        // Assert
++        assertEquals("PF-042", siguiente);
++    }
++
++    @Test
++    @DisplayName("numeroDe compara como número: PF-1000 es mayor que PF-999")
++    void numeroDeComparaComoNumero() {
++        // Act
++        int mayor = Math.max(GeneradorIdReportes.numeroDe("PF-999"), GeneradorIdReportes.numeroDe("PF-1000"));
++        // Assert
++        assertEquals(1000, mayor);
++    }
++
++    @Test
++    @DisplayName("numeroDe devuelve 0 si el texto no tiene el formato PF-número")
++    void numeroDeSinFormato() {
++        // Act y Assert
++        assertEquals(0, GeneradorIdReportes.numeroDe("PF-T01"));
++        assertEquals(0, GeneradorIdReportes.numeroDe(null));
++    }
++
++    @Test
++    @DisplayName("Un último número negativo se rechaza")
++    void rechazaNegativo() {
++        // Act y Assert
++        assertThrows(IllegalArgumentException.class, () -> new GeneradorIdReportes(-1));
+     }
+ 
+     @Test
+diff --git a/src/test/java/petfinder/integracion/persistencia/ReinicioPersistenciaIT.java b/src/test/java/petfinder/integracion/persistencia/ReinicioPersistenciaIT.java
+new file mode 100644
+--- /dev/null
++++ b/src/test/java/petfinder/integracion/persistencia/ReinicioPersistenciaIT.java
+@@ -0,0 +1,73 @@
++package petfinder.integracion.persistencia;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++import java.util.UUID;
++
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++import org.springframework.boot.builder.SpringApplicationBuilder;
++import org.springframework.context.ConfigurableApplicationContext;
++
++import petfinder.PetFinderApplication;
++import petfinder.application.port.entrada.GestionReportes;
++import petfinder.domain.model.Contacto;
++import petfinder.domain.model.GeneradorIdReportes;
++import petfinder.domain.model.Mascota;
++import petfinder.domain.model.ReportePerdida;
++import petfinder.domain.model.SolicitudReporte;
++import petfinder.domain.model.TipoReporte;
++import petfinder.domain.model.Ubicacion;
++
++/**
++ * Simula un reinicio contra una base que sobrevive, como PostgreSQL en Compose:
++ * la aplicación arranca dos veces seguidas contra la misma base H2 con nombre
++ * (DB_CLOSE_DELAY=-1 la mantiene viva entre los dos arranques). Antes de S7 el
++ * segundo arranque volvía a PF-001 y el siguiente POST pisaba el caso guardado.
++ */
++class ReinicioPersistenciaIT {
++
++    @Test
++    @DisplayName("Tras reiniciar, el caso sigue ahí, el siguiente ID es nuevo y la lista crece en 1")
++    void elCasoSobreviveAlReinicio() {
++        // Arrange
++        String base = "--spring.datasource.url=jdbc:h2:mem:reinicio-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
++        String idAntes;
++        int activosAntes;
++        try (ConfigurableApplicationContext app = arrancar(base)) {
++            GestionReportes gestion = app.getBean(GestionReportes.class);
++            idAntes = gestion.registrar(TipoReporte.PERDIDA, perdida("Toby")).getId();
++            activosAntes = gestion.listarActivos().size();
++        }
++
++        // Act
++        try (ConfigurableApplicationContext app = arrancar(base)) {
++            GestionReportes gestion = app.getBean(GestionReportes.class);
++            ReportePerdida guardado = (ReportePerdida) gestion.consultar(idAntes);
++            String idNuevo = gestion.registrar(TipoReporte.PERDIDA, perdida("Nala")).getId();
++            int activosDespues = gestion.listarActivos().size();
++
++            // Assert
++            assertEquals("Toby", guardado.getMascota().nombre());
++            assertTrue(GeneradorIdReportes.numeroDe(idNuevo) > GeneradorIdReportes.numeroDe(idAntes),
++                    "El ID después del reinicio debe ser nuevo: antes " + idAntes + ", después " + idNuevo);
++            assertEquals(activosAntes + 1, activosDespues,
++                    "Solo debe sumarse Nala: los casos de ejemplo no se cargan otra vez");
++        }
++    }
++
++    private static ConfigurableApplicationContext arrancar(String base) {
++        // Argumentos de línea de comandos: ganan sobre application.properties y sobre el .env local.
++        return new SpringApplicationBuilder(PetFinderApplication.class)
++                .run("--server.port=0", "--ANTHROPIC_API_KEY=", base);
++    }
++
++    private static SolicitudReporte perdida(String nombre) {
++        return SolicitudReporte.paraPerdida(
++                new Ubicacion("Chapinero", "Parque de los Hippies", 4.6486, -74.0628),
++                "Salió por la puerta del garaje.",
++                new Contacto("Prueba de reinicio", "3001112233"),
++                new Mascota(nombre, "perro", "criollo", "negro", "collar verde"));
++    }
++}
+diff --git a/src/test/java/petfinder/integracion/persistencia/RepositorioReportesH2IT.java b/src/test/java/petfinder/integracion/persistencia/RepositorioReportesH2IT.java
+--- a/src/test/java/petfinder/integracion/persistencia/RepositorioReportesH2IT.java
++++ b/src/test/java/petfinder/integracion/persistencia/RepositorioReportesH2IT.java
+@@ -88,6 +88,18 @@
+     }
+ 
+     @Test
++    @DisplayName("El último número de ID se compara como número, no como texto")
++    void ultimoNumeroDeIdEsNumerico() {
++        // Arrange
++        repositorio.guardar(perdida("PF-999", EstadoReporte.ACTIVO, List.of()));
++        repositorio.guardar(perdida("PF-1000", EstadoReporte.CERRADO, List.of()));
++        // Act
++        int ultimo = repositorio.ultimoNumeroDeId();
++        // Assert
++        assertEquals(1000, ultimo);
++    }
++
++    @Test
+     @DisplayName("Listar activos excluye resueltos y cerrados")
+     void listarActivosFiltraPorEstado() {
+         // Arrange
+diff --git a/src/test/resources/config/application.properties b/src/test/resources/config/application.properties
+new file mode 100644
+--- /dev/null
++++ b/src/test/resources/config/application.properties
+@@ -0,0 +1,5 @@
++# Solo para pruebas: Spring Boot lee classpath:/config/application.properties además del de
++# src/main/resources y con más prioridad. Cada contexto de prueba recibe su propia base H2.
++# Desde S7 el esquema lo crea Flyway y ya no se borra al arrancar otro contexto, así que sin
++# esto los datos de una prueba aparecerían en la siguiente según el orden en que corran.
++spring.datasource.url=jdbc:h2:mem:pruebas-${random.uuid};DB_CLOSE_DELAY=-1
