@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -375,5 +376,81 @@ class ControladoresWebTest {
         assertEquals("Luna", enviado.getValue().nombre());
         assertEquals("Cedritos", enviado.getValue().zona());
         verify(gestionReportes, never()).registrar(any(), any());
+    }
+
+    // --- Límites de tamaño ---
+
+    @Test
+    @DisplayName("Un cuerpo de 1 MB responde 413 sin llegar al asistente")
+    void cuerpoDeUnMegaResponde413() throws Exception {
+        // Arrange
+        String cuerpo = "{ \"texto\": \"" + "a".repeat(1024 * 1024) + "\" }";
+        // Act + Assert
+        mvc.perform(post("/api/asistente/turno").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isContentTooLarge())
+                .andExpect(jsonPath("$.error").value("La petición es demasiado grande"));
+        verifyNoInteractions(asistenteReportes);
+    }
+
+    @Test
+    @DisplayName("POST /api/reportes con una zona de 256 caracteres responde 400 sin llamar al puerto")
+    void zonaDemasiadoLargaResponde400() throws Exception {
+        // Arrange
+        String cuerpo = CUERPO_PERDIDA.replace("\"Cedritos\"", "\"" + "z".repeat(256) + "\"");
+        // Act + Assert
+        mvc.perform(post("/api/reportes").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("El campo zona admite hasta 255 caracteres"));
+        verifyNoInteractions(gestionReportes);
+    }
+
+    @Test
+    @DisplayName("POST /api/reportes con una descripción de 2000 caracteres se acepta")
+    void descripcionEnElLimiteSeAcepta() throws Exception {
+        // Arrange
+        String cuerpo = CUERPO_PERDIDA.replace("\"Se escapó en la tarde\"", "\"" + "d".repeat(2000) + "\"");
+        when(gestionReportes.registrar(eq(TipoReporte.PERDIDA), any(SolicitudReporte.class)))
+                .thenReturn(reporteLuna("PF-0001"));
+        // Act + Assert
+        mvc.perform(post("/api/reportes").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("Un avistamiento con una descripción de 2001 caracteres responde 400 sin llamar al puerto")
+    void avistamientoDemasiadoLargoResponde400() throws Exception {
+        // Arrange
+        String cuerpo = "{ \"zona\": \"Cedritos\", \"descripcion\": \"" + "d".repeat(2001) + "\" }";
+        // Act + Assert
+        mvc.perform(post("/api/reportes/PF-0001/avistamientos").contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("El campo descripción admite hasta 2000 caracteres"));
+        verifyNoInteractions(registroAvistamientos);
+    }
+
+    @Test
+    @DisplayName("POST /api/voz con un medio de contacto de 256 caracteres responde 400 sin llamar al puerto")
+    void contactoDeVozDemasiadoLargoResponde400() throws Exception {
+        // Arrange
+        String cuerpo = "{ \"texto\": \"perdí un perro llamado Max en Chía\", \"nombreContacto\": \"Ana\", "
+                + "\"medioContacto\": \"" + "3".repeat(256) + "\" }";
+        // Act + Assert
+        mvc.perform(post("/api/voz").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("El campo medio de contacto admite hasta 255 caracteres"));
+        verifyNoInteractions(procesadorComandosVoz);
+    }
+
+    @Test
+    @DisplayName("POST /api/asistente/turno con un borrador de señas de 256 caracteres responde 400")
+    void borradorDemasiadoLargoResponde400() throws Exception {
+        // Arrange
+        String cuerpo = "{ \"borrador\": { \"senas\": \"" + "s".repeat(256) + "\" }, \"texto\": \"hola\" }";
+        // Act + Assert
+        mvc.perform(post("/api/asistente/turno").contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("El campo señas admite hasta 255 caracteres"));
+        verifyNoInteractions(asistenteReportes);
     }
 }

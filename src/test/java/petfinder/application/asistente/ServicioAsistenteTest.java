@@ -3,9 +3,11 @@ package petfinder.application.asistente;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import petfinder.application.port.entrada.AsistenteReportes.ResultadoTurno;
 import petfinder.application.port.salida.ExtractorDatosReporte;
 import petfinder.application.service.ServicioAsistente;
+import petfinder.domain.exception.DatosInvalidosException;
 import petfinder.domain.model.BorradorReporte;
 import petfinder.domain.model.BorradorReporte.Campo;
 import petfinder.domain.model.TipoReporte;
@@ -229,5 +232,32 @@ class ServicioAsistenteTest {
         // Assert
         assertEquals(BorradorReporte.vacio(), resultado.borrador());
         assertEquals(Campo.TIPO.pregunta(), resultado.pregunta());
+    }
+
+    @Test
+    @DisplayName("Una frase de más de 1000 caracteres se rechaza sin llamar a ningún extractor")
+    void fraseDemasiadoLargaSeRechazaSinExtractores() {
+        // Arrange
+        String frase = "a".repeat(ServicioAsistente.LONGITUD_MAXIMA + 1);
+        // Act
+        DatosInvalidosException error = assertThrows(DatosInvalidosException.class,
+                () -> servicio().procesarTurno(BorradorReporte.vacio(), frase));
+        // Assert
+        assertTrue(error.getMessage().contains(String.valueOf(ServicioAsistente.LONGITUD_MAXIMA)));
+        verifyNoInteractions(primero, segundo);
+    }
+
+    @Test
+    @DisplayName("Una frase de exactamente 1000 caracteres sí llega a los extractores")
+    void fraseEnElLimiteLlegaALosExtractores() {
+        // Arrange
+        String frase = "a".repeat(ServicioAsistente.LONGITUD_MAXIMA);
+        when(primero.extraer(eq(frase), any())).thenReturn(Optional.empty());
+        when(segundo.extraer(eq(frase), any())).thenReturn(Optional.empty());
+        // Act
+        ResultadoTurno resultado = servicio().procesarTurno(BorradorReporte.vacio(), frase);
+        // Assert
+        assertEquals("ninguna", resultado.fuente());
+        verify(primero).extraer(eq(frase), any());
     }
 }

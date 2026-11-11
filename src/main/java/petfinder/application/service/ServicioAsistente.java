@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import petfinder.application.port.entrada.AsistenteReportes;
 import petfinder.application.port.salida.ExtractorDatosReporte;
+import petfinder.domain.exception.DatosInvalidosException;
 import petfinder.domain.model.BorradorReporte;
 
 /**
@@ -24,6 +25,17 @@ public class ServicioAsistente implements AsistenteReportes {
     static final String FUENTE_NINGUNA = "ninguna";
     static final String MENSAJE_LISTO = "Listo. Revisa la tarjeta y publica.";
 
+    /**
+     * Tope de una frase del asistente. Contar una pérdida con contacto cabe
+     * de sobra en unos cientos de caracteres; más allá de mil es un pegado
+     * accidental o un abuso. Se corta aquí, antes de cualquier extractor,
+     * porque cada carácter le cuesta CPU al de regex y dinero al de Claude.
+     */
+    public static final int LONGITUD_MAXIMA = 1000;
+
+    static final String MENSAJE_DEMASIADO_LARGO =
+            "Cuéntamelo en menos de " + LONGITUD_MAXIMA + " caracteres";
+
     private final List<ExtractorDatosReporte> extractores;
 
     public ServicioAsistente(List<ExtractorDatosReporte> extractores) {
@@ -35,6 +47,9 @@ public class ServicioAsistente implements AsistenteReportes {
         BorradorReporte borrador = actual != null ? actual : BorradorReporte.vacio();
         if (texto == null || texto.isBlank()) {
             return resultado(borrador, FUENTE_NINGUNA);
+        }
+        if (texto.length() > LONGITUD_MAXIMA) {
+            throw new DatosInvalidosException(MENSAJE_DEMASIADO_LARGO);
         }
         for (ExtractorDatosReporte extractor : extractores) {
             Optional<BorradorReporte> extraido = intentar(extractor, texto, borrador);

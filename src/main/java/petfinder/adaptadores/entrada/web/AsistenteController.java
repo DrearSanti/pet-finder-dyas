@@ -1,5 +1,9 @@
 package petfinder.adaptadores.entrada.web;
 
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.CORTO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.LARGO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.exigir;
+
 import java.util.List;
 
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,9 +43,18 @@ public class AsistenteController {
                     b.descripcion(), b.contactoNombre(), b.contactoMedio());
         }
 
+        /**
+         * Con los mismos topes de {@code POST /api/reportes}: la tarjeta que
+         * se arma aquí es la que después se publica, y cada campo viaja a
+         * Claude en el turno siguiente.
+         */
         BorradorReporte aBorrador() {
-            return new BorradorReporte(tipo, nombre, especie, raza, color, senas, descripcionMascota, zona,
-                    referencia, latitud, longitud, descripcion, contactoNombre, contactoMedio);
+            return new BorradorReporte(tipo, exigir(nombre, CORTO, "nombre de la mascota"),
+                    exigir(especie, CORTO, "especie"), exigir(raza, CORTO, "raza"), exigir(color, CORTO, "color"),
+                    exigir(senas, CORTO, "señas"), exigir(descripcionMascota, LARGO, "descripción de la mascota"),
+                    exigir(zona, CORTO, "zona"), exigir(referencia, CORTO, "referencia"), latitud, longitud,
+                    exigir(descripcion, LARGO, "descripción"), exigir(contactoNombre, CORTO, "nombre de contacto"),
+                    exigir(contactoMedio, CORTO, "medio de contacto"));
         }
     }
 

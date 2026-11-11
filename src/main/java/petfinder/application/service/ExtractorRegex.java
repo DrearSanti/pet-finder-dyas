@@ -37,7 +37,15 @@ public class ExtractorRegex implements ExtractorDatosReporte {
     private static final Pattern CELULAR = Pattern.compile(
             "(?<!\\d)(?:\\+?57[\\s-]?)?(3\\d{2})[\\s.-]?(\\d{3})[\\s.-]?(\\d{4})(?!\\d)");
 
-    private static final Pattern CORREO = Pattern.compile("[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+");
+    /**
+     * Cada parte tiene tope (64 antes de la arroba, 63 por etiqueta y hasta 8
+     * etiquetas, los límites de un correo real). Sin topes, una frase larga sin
+     * arroba hacía que cada posición recorriera el resto del texto: 100 KB de
+     * letras ocupaban un núcleo 17 segundos. Con topes cada intento revisa unos
+     * cientos de caracteres y el costo crece en línea recta con el texto.
+     */
+    private static final Pattern CORREO = Pattern.compile(
+            "[\\w.+-]{1,64}@[\\w-]{1,63}(?:\\.[\\w-]{1,63}){1,8}");
 
     /**
      * "…en Chía mi número es…": a partir de aquí la frase habla del contacto y
@@ -50,9 +58,14 @@ public class ExtractorRegex implements ExtractorDatosReporte {
      * Se toma del texto original, no del normalizado, para conservar tildes y
      * la ñ. Cada coincidencia se detiene antes del siguiente "en": si se
      * comiera el resto de la frase, nunca se llegaría al último lugar.
+     *
+     * La anticipación mira un solo espacio y no {@code \s+}: con {@code \s+},
+     * cada espacio de una racha larga volvía a recorrer la racha entera. Con
+     * varios espacios antes del "en" el corte llega un espacio después, y el
+     * {@code strip()} de {@link #zonaDe} deja la misma zona.
      */
     private static final Pattern ZONA = Pattern.compile(
-            "(?<!\\p{L})[Ee][Nn]\\s+((?:(?!\\s+[Ee][Nn]\\s)[^,.;])+)");
+            "(?<!\\p{L})[Ee][Nn]\\s+((?:(?!\\s[Ee][Nn]\\s)[^,.;])+)");
 
     private static final Pattern NOMBRE_DICHO = Pattern.compile(
             "(?iu)(?<!\\p{L})(?:llamad[oa]|se\\s+llama)\\s+(\\p{L}+)");
