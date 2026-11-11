@@ -1,0 +1,54 @@
+# Controles de seguridad de Pet Finder: Secretos (S5), SAST (S6) y SCA (A5).
+name: Seguridad
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  # Corrida diaria: la base de vulnerabilidades cambia sin que nadie toque el código.
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  secretos:
+    name: Secretos
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      # SHA-256 de gitleaks_8.30.1_linux_x64.tar.gz, copiado de gitleaks_8.30.1_checksums.txt de la release oficial.
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Todo el historial: el umbral es cero secretos, incluido lo que ya se borró en commits viejos.
+          fetch-depth: 0
+      - name: Instalar Gitleaks con checksum validado
+        run: |
+          archivo="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$archivo" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archivo}"
+          echo "${GITLEAKS_SHA256}  ${archivo}" | sha256sum -c -
+          tar -xzf "$archivo" gitleaks
+          ./gitleaks version
+      # --redact porque los logs de Actions son públicos. --log-opts=HEAD recorre todo el historial que llega
+      # a este commit (en un PR, el de main más el de la rama); sin él, Gitleaks usa --all y una rama de
+      # prueba con una llave falsa pondría en rojo el check de todos los demás.
+      - name: Buscar secretos en el historial (cero secretos)
+        run: ./gitleaks git . --log-opts="HEAD" --redact --verbose --exit-code 1 --report-format sarif --report-path gitleaks.sarif
+      - name: Publicar reporte de secretos
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reporte-secretos
+          path: gitleaks.sarif
+          if-no-files-found: warn
