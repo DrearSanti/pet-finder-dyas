@@ -1,0 +1,3 @@
+# Excepciones del umbral de SAST (scripts/umbral-sarif.py). Una por línea: "regla ruta".
+# Cada línea necesita su fila en docs/seguridad.md: falso positivo o riesgo aceptado, con la justificación.
+# Descartar una alerta en la pestaña Security no cambia el SARIF; por eso existe este archivo.

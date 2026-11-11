@@ -1,0 +1,5 @@
+name: Configuración de CodeQL de Pet Finder
+# Lo que no corre en producción no se analiza: el plan del Corte 2 y las pruebas.
+paths-ignore:
+  - blueprints
+  - src/test
