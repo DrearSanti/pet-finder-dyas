@@ -3,8 +3,8 @@ name: CD
 # Entrega continua. Cada commit que llega a main (solo por pull request, con los checks en verde) se
 # empaqueta como imagen y se publica en GitHub Container Registry con el SHA del commit como etiqueta.
 # Un tag v* la publica además con la versión. Nunca se usa la etiqueta latest: así cada despliegue y cada
-# reversión nombran exactamente qué código corre. El despliegue a Render (M7) se agrega como un job que
-# depende de este.
+# reversión nombran exactamente qué código corre. Después, solo en main, la despliega en Render, espera a
+# que la URL reporte ese commit y corre la prueba de humo y la de carga corta: si algo falla, queda en rojo.
 on:
   push:
     branches: [main]
@@ -86,3 +86,89 @@ jobs:
           echo "$info" | grep -q "\"commit\":\"${GITHUB_SHA}\"" || { echo "La imagen no reporta el commit ${GITHUB_SHA}"; docker logs pet-finder; exit 1; }
           echo "### Imagen publicada" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${IMAGEN}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  desplegar:
+    name: Desplegar en Render y verificar
+    needs: publicar-imagen
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # El entorno guarda el deploy hook como secreto (tarea S3) y deja en GitHub el historial de despliegues
+    environment:
+      name: produccion
+      url: https://pet-finder-akac.onrender.com
+    env:
+      URL_APP: https://pet-finder-akac.onrender.com
+      IMAGEN: ${{ needs.publicar-imagen.outputs.imagen }}
+      # Versión fija de k6 y su suma SHA-256, del archivo de sumas del release en GitHub
+      K6_VERSION: v2.2.0
+      K6_SHA256: b5a8003c86f35f5cd5ceef1490312c48e587696c94d998cefc6d7b3b4cb1597d
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Pedir el despliegue a Render con la imagen de este commit
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "Falta el secreto RENDER_DEPLOY_HOOK_URL en el entorno produccion (tarea S3)"
+            exit 1
+          fi
+          imagen_codificada="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["IMAGEN"], safe=""))')"
+          curl -fsS -X POST "${HOOK}&imgURL=${imagen_codificada}" > /dev/null
+          echo "Despliegue pedido: $IMAGEN"
+
+      - name: Esperar a que Render corra este commit
+        # Mientras Render cambia de versión, la anterior sigue respondiendo sana. Probarla daría un verde falso,
+        # así que se espera hasta que /actuator/info diga el SHA nuevo. Incluye despertar el plan gratis.
+        run: |
+          for intento in $(seq 1 60); do
+            commit="$(curl -fsS -m 30 "$URL_APP/actuator/info" 2>/dev/null \
+              | python3 -c 'import json, sys; print(json.load(sys.stdin).get("app", {}).get("commit", ""))' 2>/dev/null || true)"
+            if [ "$commit" = "$GITHUB_SHA" ]; then
+              echo "Render ya corre $GITHUB_SHA"
+              exit 0
+            fi
+            echo "Intento $intento: responde ${commit:-nada}; espero 10 s"
+            sleep 10
+          done
+          echo "Render no llegó a correr $GITHUB_SHA en 10 minutos"
+          exit 1
+
+      - name: Prueba de humo contra la URL desplegada
+        run: |
+          if [ -f scripts/humo-flujo.sh ]; then
+            sh scripts/humo-flujo.sh "$URL_APP"
+          else
+            # Respaldo hasta que entre humo-flujo.sh (A4): las rutas principales deben responder 200
+            for ruta in /actuator/health/readiness / /api/reportes; do
+              curl -fsS -o /dev/null -w "$ruta %{http_code}\n" "$URL_APP$ruta"
+            done
+          fi
+
+      - name: Instalar k6
+        run: |
+          curl -fsSL -o k6.tar.gz "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz"
+          echo "${K6_SHA256}  k6.tar.gz" | sha256sum -c -
+          tar -xzf k6.tar.gz
+          sudo mv "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+
+      - name: Prueba de carga corta contra la URL desplegada (SLO)
+        run: |
+          k6 run -e BASE_URL="$URL_APP" --summary-export carga-corta.json \
+            --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99),count" \
+            perf/scripts/corta.js
+
+      - name: Publicar el resumen de k6
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: carga-corta
+          path: carga-corta.json
+          if-no-files-found: warn
+
+      - name: Resumen del despliegue
+        if: success()
+        run: |
+          echo "### Desplegado en Render" >> "$GITHUB_STEP_SUMMARY"
+          echo "Imagen \`${IMAGEN}\` en ${URL_APP}, con humo y carga corta en verde." >> "$GITHUB_STEP_SUMMARY"
