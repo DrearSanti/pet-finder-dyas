@@ -70,6 +70,38 @@ Reinicia la app entre una y otra. Si la app está en otra máquina, agrega `-e B
 
 Si el SLO no se cumple, k6 termina con un código distinto de 0. **Es un resultado válido**: se reporta tal cual y se analiza. Reconocer un límite con datos vale más que maquillarlo.
 
+## Prueba corta del pipeline
+
+`perf/scripts/corta.js` repite el mismo escenario y el mismo SLO en un minuto y medio, para correr después de cada despliegue contra la URL desplegada. Si el SLO no se cumple, k6 sale con un código distinto de 0 y el despliegue queda en rojo.
+
+| | `carga.js` | `corta.js` |
+|---|---|---|
+| Cuándo corre | A mano, o con el workflow `Carga larga` | Después de cada despliegue, en el pipeline |
+| Modelo | 50 usuarios con pausa de 1 s | Tasa fija: 11 ciclos por segundo, unas 33 req/s |
+| Duración | 4 min 30 s | 30 s de calentamiento y 60 s de medición |
+| Sobre qué se mide el SLO | Toda la prueba | Solo los 60 s de medición |
+| Umbrales | p95 < 500 ms, errores < 1 %, 30 req/s y p95 por operación | Los mismos, más al menos 1800 peticiones en la medición y cero iteraciones perdidas |
+
+Cada ciclo suma una tercera petición, `limpieza`: cierra el caso que acaba de crear, para no llenar de reportes de prueba el mapa del entorno desplegado. También cuenta para el SLO y tiene su propio umbral de p95.
+
+**Por qué tasa fija.** Con usuarios y pausas, un servidor lento recibe menos peticiones y el throughput baja sin que ningún umbral de latencia lo note. Con tasa fija, si el servidor no da abasto, las iteraciones se pierden y fallan los umbrales de conteo.
+
+**Por qué el calentamiento no cuenta.** El plan gratis de Render apaga el servicio después de 15 minutos sin tráfico, y la JVM tarda unos segundos en compilar lo que más se usa. Ese primer medio minuto mediría el arranque, no el sistema.
+
+Cómo correrla (igual en macOS, Git Bash y PowerShell), con la app corriendo:
+
+```bash
+k6 run -e BASE_URL=http://localhost:8080 perf/scripts/corta.js
+```
+
+Variables opcionales: `ITERACIONES_POR_SEGUNDO` (11), `CALENTAMIENTO` (30s) y `MEDICION` (60s).
+
+**Resultado en local** (7 de noviembre de 2026, el jar sin clave de Anthropic, en la máquina descrita en Entorno): 1983 peticiones en la medición, 0 % de errores, p95 de 2,1 ms (registrar 2,5 ms, listar 1,7 ms, limpieza 1,6 ms) y cero iteraciones perdidas; al terminar solo quedaban activos los 4 casos de ejemplo. Con la app apagada, k6 sale con código 99.
+
+### Prueba larga en GitHub Actions
+
+`.github/workflows/carga-larga.yml` corre `carga.js` completa contra la app levantada con Docker Compose, con PostgreSQL, dentro del runner de GitHub, sin tocar el entorno desplegado. Se lanza a mano: pestaña **Actions**, workflow **Carga larga**, botón **Run workflow**. El resumen de k6 queda como artefacto `carga-larga` de la ejecución.
+
 ## Resultados
 
 Los archivos de k6 están en `perf/resultados/baseline.json` y `perf/resultados/carga.json`, y su salida de consola, como imagen, en `perf/resultados/resumen-k6-baseline.png` y `perf/resultados/resumen-k6-carga.png`. En el JSON de k6, `"thresholds": {"p(95)<500": false}` significa que el umbral **no** se superó.

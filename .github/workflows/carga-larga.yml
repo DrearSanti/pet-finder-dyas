@@ -1,0 +1,75 @@
+name: Carga larga
+
+# La prueba larga (perf/scripts/carga.js: 50 usuarios durante 4 min 30 s) no corre en cada push.
+# Se lanza a mano desde la pestaña Actions con "Run workflow". Mide la app levantada con Docker
+# Compose dentro del runner, con PostgreSQL, sin tocar el entorno desplegado. La prueba corta
+# (perf/scripts/corta.js) es la que corre después de cada despliegue.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  carga-larga:
+    name: Carga larga contra Compose
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      BASE_URL: http://localhost:8080
+      # Versión fija de k6 y su suma SHA-256, del archivo de sumas del release en GitHub
+      K6_VERSION: v2.2.0
+      K6_SHA256: b5a8003c86f35f5cd5ceef1490312c48e587696c94d998cefc6d7b3b4cb1597d
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Crear un .env de prueba
+        # Credenciales de un solo uso para la base del runner: se generan aquí y mueren con el job.
+        run: |
+          clave="$(openssl rand -hex 16)"
+          echo "::add-mask::$clave"
+          printf 'POSTGRES_USER=petfinder\nPOSTGRES_PASSWORD=%s\n' "$clave" > .env
+
+      - name: Levantar la app y la base
+        run: docker compose up -d --build
+
+      - name: Esperar a que la app esté lista
+        run: |
+          for intento in $(seq 1 60); do
+            if curl -fsS "$BASE_URL/actuator/health/readiness"; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "La app no quedó lista en 5 minutos"
+          exit 1
+
+      - name: Instalar k6
+        run: |
+          curl -fsSL -o k6.tar.gz "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz"
+          echo "${K6_SHA256}  k6.tar.gz" | sha256sum -c -
+          tar -xzf k6.tar.gz
+          sudo mv "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+          k6 version
+
+      - name: Correr carga.js
+        run: |
+          k6 run --summary-export carga-larga.json \
+            --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99),count" \
+            perf/scripts/carga.js
+
+      - name: Logs de la app
+        if: failure()
+        run: docker compose logs app
+
+      - name: Publicar el resumen de k6
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: carga-larga
+          path: carga-larga.json
+          if-no-files-found: warn
+
+      - name: Apagar Compose
+        if: always()
+        run: docker compose down -v
