@@ -14,9 +14,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-petfinder}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?Defina POSTGRES_USER (ver .env.example)}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD (ver .env.example)}
-      # Las tablas se recrean en cada arranque de la app. El generador de IDs (PF-001...) vive en
-      # memoria y vuelve a empezar al reiniciar; con "update" pisaría reportes ya guardados.
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create
+      # Sin SPRING_JPA_HIBERNATE_DDL_AUTO: el esquema lo crea Flyway al arrancar (db/migration) y Hibernate
+      # solo lo valida. Los casos sobreviven a docker compose restart; down -v sí borra la base.
       # La consola de H2 no aplica con PostgreSQL
       SPRING_H2_CONSOLE_ENABLED: "false"
       # Asistente con Claude (opcional: sin clave funciona con reglas)

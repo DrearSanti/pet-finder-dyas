@@ -88,6 +88,18 @@ class RepositorioReportesH2IT {
     }
 
     @Test
+    @DisplayName("El último número de ID se compara como número, no como texto")
+    void ultimoNumeroDeIdEsNumerico() {
+        // Arrange
+        repositorio.guardar(perdida("PF-999", EstadoReporte.ACTIVO, List.of()));
+        repositorio.guardar(perdida("PF-1000", EstadoReporte.CERRADO, List.of()));
+        // Act
+        int ultimo = repositorio.ultimoNumeroDeId();
+        // Assert
+        assertEquals(1000, ultimo);
+    }
+
+    @Test
     @DisplayName("Listar activos excluye resueltos y cerrados")
     void listarActivosFiltraPorEstado() {
         // Arrange

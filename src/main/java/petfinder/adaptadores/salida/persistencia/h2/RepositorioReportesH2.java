@@ -9,6 +9,7 @@ import petfinder.application.port.salida.RepositorioReportes;
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;
 import petfinder.domain.model.EstadoReporte;
+import petfinder.domain.model.GeneradorIdReportes;
 import petfinder.domain.model.Mascota;
 import petfinder.domain.model.ReporteEncontrada;
 import petfinder.domain.model.ReporteMascota;
@@ -58,6 +59,15 @@ public class RepositorioReportesH2 implements RepositorioReportes {
         return jpa.findByEstadoOrderByFechaCreacionDesc(EstadoReporte.ACTIVO).stream()
                 .map(RepositorioReportesH2::aDominio)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int ultimoNumeroDeId() {
+        return jpa.listarIds().stream()
+                .mapToInt(GeneradorIdReportes::numeroDe)
+                .max()
+                .orElse(0);
     }
 
     private static void copiar(ReporteMascota reporte, ReporteEntity fila) {

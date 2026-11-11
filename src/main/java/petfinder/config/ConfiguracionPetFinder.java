@@ -34,9 +34,13 @@ import petfinder.adaptadores.salida.persistencia.h2.RepositorioReportesH2;
 @Configuration
 public class ConfiguracionPetFinder {
 
+    /**
+     * Arranca después del último PF- guardado: con PostgreSQL la base sobrevive
+     * a los reinicios y el contador en memoria no.
+     */
     @Bean
-    public GeneradorIdReportes generadorIdReportes() {
-        return new GeneradorIdReportes();
+    public GeneradorIdReportes generadorIdReportes(RepositorioReportes repositorio) {
+        return new GeneradorIdReportes(repositorio.ultimoNumeroDeId());
     }
 
     @Bean

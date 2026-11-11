@@ -35,4 +35,15 @@ public interface RepositorioReportes {
      * @return lista de reportes activos
      */
     List<ReporteMascota> listarActivos();
+
+    /**
+     * Mayor número usado en un identificador PF-, o 0 si no hay reportes.
+     *
+     * Lo pide config al arrancar: el generador sigue desde ahí en vez de
+     * empezar en PF-001 y pisar casos guardados, y DatosDeEjemplo no carga
+     * nada sobre una base que ya tiene casos, aunque estén cerrados.
+     *
+     * @return el mayor número, comparado como número y no como texto
+     */
+    int ultimoNumeroDeId();
 }
