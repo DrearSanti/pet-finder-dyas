@@ -54,12 +54,30 @@ Cada celda dice qué tan bien cumple el estilo el criterio: **Alta**, **Media** 
 - `config/` es el único lugar que conoce las clases concretas y las conecta con `@Bean` (composition root).
 - `ReglasArquitecturaTest` (ArchUnit) convierte la regla en una prueba que falla en cada `./mvnw test`.
 
+### Reglas que lo verifican (Corte 3)
+
+`ReglasArquitecturaTest` corre en el check `reglas-arquitectura` de cada PR. Cada regla protege una frontera de esta decisión:
+
+| Regla | Frontera |
+|---|---|
+| `elDominioEsJavaPuro` | El dominio no conoce Spring, JPA, Anthropic ni otros paquetes del proyecto |
+| `laAplicacionNoConoceAdaptadoresNiFrameworks` | Los servicios dependen solo del dominio y de sus puertos |
+| `lasEntradasSoloHablanConPuertos` | Web, voz y consola entran por los puertos de entrada, nunca por los servicios |
+| `laPersistenciaNoConoceOtrosAdaptadores` | Cambiar la base no obliga a tocar la web ni el extractor con Claude |
+| `laIaNoConoceOtrosAdaptadores` | Cambiar el modelo no obliga a tocar la web ni la persistencia |
+| `soloConfigConoceLosAdaptadoresDeSalida` | `config` es el único lugar que nombra los adaptadores de salida concretos |
+| `elAsistenteNuncaPublica` | Quien implementa `AsistenteReportes` no llega a `GestionReportes` ni al repositorio (T8) |
+| `soloElAdaptadorDeIaUsaElSdkDeAnthropic` | El SDK de Anthropic queda dentro de `adaptadores.salida.ia` |
+| `soloLaPersistenciaUsaJpa` | JPA queda dentro de `adaptadores.salida.persistencia` |
+
+Hasta el Corte 2, la regla de entrada solo miraba la web: la consola del Corte 1 usaba `ServicioReportes` y `ServicioAvistamientos` directamente (24 violaciones en `MenuConsola` y `EscenarioDemostracion`). En el Corte 3 la consola recibe los puertos `GestionReportes` y `RegistroAvistamientos`, y ninguna regla usa `allowEmptyShould`: si un paquete cambia de nombre, la regla falla en vez de pasar sin revisar nada.
+
 ## Consecuencias positivas
 
 - **Modificabilidad (evidencia medida).** El extractor con Claude entró en la tarea E3-T6 sin tocar el dominio: `git diff step-14-h2-integrado step-15-extractor-claude --stat -- src/main/java/petfinder/domain` sale vacío. Lo mismo pasó con H2 (E3-T3) y con los cuatro controladores REST (E2-T4): se agregaron adaptadores, no se cambiaron reglas.
 - **El mismo caso de uso por tres entradas (evidencia medida).** `FlujoVozSistemaIT.vozFormularioYAsistenteProducenElMismoReporte` publica "Max, perro, Chía" por formulario, voz y asistente, y los tres producen el mismo tipo, nombre, especie y zona.
 - **Testabilidad.** 196 pruebas unitarias, de arquitectura y de capa web corren sin base ni red. La cobertura del paquete `domain` es de 96,8 % de instrucciones (JaCoCo, `./mvnw clean verify` del 2026-09-26).
-- **La regla se cumple sola.** Las 5 reglas de ArchUnit están en verde; si alguien le pone `@Entity` a un reporte o un controlador importa un servicio, `./mvnw test` se pone rojo.
+- **La regla se cumple sola.** Las 9 reglas de ArchUnit (5 del Corte 2 y 4 del Corte 3) están en verde; si alguien le pone `@Entity` a un reporte o un controlador importa un servicio, `./mvnw test` se pone rojo.
 - **El Corte 1 sobrevive.** La demo de consola (`./mvnw -q compile exec:java`) sigue imprimiendo hasta `PASO 11`, y las 11 pruebas originales siguen pasando con sus aserciones.
 
 ## Consecuencias negativas

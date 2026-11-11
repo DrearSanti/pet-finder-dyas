@@ -2,8 +2,8 @@ package petfinder.adaptadores.entrada.consola;
 
 import java.time.LocalDateTime;
 
-import petfinder.application.service.ServicioAvistamientos;
-import petfinder.application.service.ServicioReportes;
+import petfinder.application.port.entrada.RegistroAvistamientos;
+import petfinder.application.port.entrada.GestionReportes;
 import petfinder.domain.exception.DominioException;
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;
@@ -26,14 +26,14 @@ import petfinder.domain.observer.PublicadorAvistamientos;
  */
 public class EscenarioDemostracion {
 
-    private final ServicioReportes servicioReportes;
-    private final ServicioAvistamientos servicioAvistamientos;
+    private final GestionReportes servicioReportes;
+    private final RegistroAvistamientos servicioAvistamientos;
     private final PublicadorAvistamientos publicador;
     private final AlertaPropietarioObserver alerta;
     private final AuditoriaObserver auditoria;
 
-    public EscenarioDemostracion(ServicioReportes servicioReportes,
-                                 ServicioAvistamientos servicioAvistamientos,
+    public EscenarioDemostracion(GestionReportes servicioReportes,
+                                 RegistroAvistamientos servicioAvistamientos,
                                  PublicadorAvistamientos publicador,
                                  AlertaPropietarioObserver alerta,
                                  AuditoriaObserver auditoria) {
