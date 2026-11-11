@@ -38,7 +38,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * tope no depende de que el cliente diga la verdad sobre el tamaño.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class FiltroTamanoCuerpo extends OncePerRequestFilter {
 
     /** 64 KB: más de diez veces la tarjeta más grande, y nada que la memoria note. */
