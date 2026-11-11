@@ -1,0 +1,88 @@
+name: CD
+
+# Entrega continua. Cada commit que llega a main (solo por pull request, con los checks en verde) se
+# empaqueta como imagen y se publica en GitHub Container Registry con el SHA del commit como etiqueta.
+# Un tag v* la publica además con la versión. Nunca se usa la etiqueta latest: así cada despliegue y cada
+# reversión nombran exactamente qué código corre. El despliegue a Render (M7) se agrega como un job que
+# depende de este.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Dos publicaciones de la misma rama no se pisan: la segunda espera a que termine la primera
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publicar-imagen:
+    name: Publicar imagen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      imagen: ${{ steps.nombre.outputs.imagen }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Nombre y etiquetas de la imagen
+        id: nombre
+        run: |
+          imagen="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pet-finder"
+          etiquetas="${imagen}:${GITHUB_SHA}"
+          version="sin-version"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            version="${GITHUB_REF_NAME}"
+            etiquetas="${etiquetas},${imagen}:${version}"
+          fi
+          {
+            echo "imagen=${imagen}:${GITHUB_SHA}"
+            echo "etiquetas=${etiquetas}"
+            echo "version=${version}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Entrar a GitHub Container Registry
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Construir y publicar
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.nombre.outputs.etiquetas }}
+          build-args: |
+            PETFINDER_COMMIT=${{ github.sha }}
+            PETFINDER_VERSION=${{ steps.nombre.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Comprobar que la imagen publicada arranca y dice su commit
+        env:
+          IMAGEN: ${{ steps.nombre.outputs.imagen }}
+        run: |
+          docker run -d --name pet-finder -p 8080:8080 -e ANTHROPIC_API_KEY= "$IMAGEN"
+          for intento in $(seq 1 40); do
+            if curl -fsS http://localhost:8080/actuator/health/readiness > /dev/null 2>&1; then break; fi
+            sleep 3
+          done
+          info="$(curl -fsS http://localhost:8080/actuator/info)"
+          echo "$info"
+          echo "$info" | grep -q "\"commit\":\"${GITHUB_SHA}\"" || { echo "La imagen no reporta el commit ${GITHUB_SHA}"; docker logs pet-finder; exit 1; }
+          echo "### Imagen publicada" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${IMAGEN}\`" >> "$GITHUB_STEP_SUMMARY"
