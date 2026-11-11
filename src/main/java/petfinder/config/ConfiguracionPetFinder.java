@@ -3,6 +3,7 @@ package petfinder.config;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -54,10 +55,13 @@ public class ConfiguracionPetFinder {
     /**
      * La aplicación guarda en H2. RepositorioReportesEnMemoria sigue existiendo
      * para las pruebas unitarias: cambiar de adaptador es cambiar esta línea.
+     * El tope de la lista (petfinder.lista.maximo) llega desde aquí para que
+     * el puerto no cambie de firma.
      */
     @Bean
-    public RepositorioReportes repositorioReportes(ReporteJpaRepository jpa) {
-        return new RepositorioReportesH2(jpa);
+    public RepositorioReportes repositorioReportes(ReporteJpaRepository jpa,
+            @Value("${petfinder.lista.maximo:" + RepositorioReportesH2.MAXIMO_POR_OMISION + "}") int maximoLista) {
+        return new RepositorioReportesH2(jpa, maximoLista);
     }
 
     @Bean
