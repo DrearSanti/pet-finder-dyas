@@ -1,6 +1,6 @@
 // Service worker de Pet Finder: la interfaz abre aunque no haya internet; los datos, nunca desde caché.
 
-const VERSION = 'pet-finder-v1';
+const VERSION = 'pet-finder-v2';
 const MENSAJE_SIN_CONEXION = 'Sin conexión. Te mostramos lo último que vimos.';
 
 // La interfaz completa. Se precachea al instalar para que abra sin red desde la primera visita.
@@ -15,6 +15,7 @@ const INTERFAZ = [
   '/js/voz.js',
   '/js/tarjeta-viva.js',
   '/js/mapa.js',
+  '/js/registro-sw.js',
   '/img/marca.svg',
   '/img/icono-180.png',
   '/img/icono-192.png',
