@@ -93,7 +93,7 @@ Otras formas de correrla:
 | Menú de consola | `./mvnw -q compile exec:java -Dexec.args="--menu"` | `.\mvnw.cmd -q compile exec:java "-Dexec.args=--menu"` |
 | Docker | `docker build -t pet-finder .` y luego `docker run -p 8080:8080 pet-finder` | igual |
 
-**Consola de la base de datos:** con la app corriendo, http://localhost:8080/h2-console, JDBC URL `jdbc:h2:mem:petfinder`, usuario `sa`, sin contraseña.
+**Consola de la base de datos:** viene apagada, para que nadie la abra en el sistema desplegado. En tu computador se prende con el perfil `local`: `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` (PowerShell: `.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"`). Luego abre http://localhost:8080/h2-console, JDBC URL `jdbc:h2:mem:petfinder`, usuario `sa`, sin contraseña.
 
 ### 3. Correr las pruebas
 

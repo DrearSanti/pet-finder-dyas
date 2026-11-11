@@ -117,7 +117,7 @@ Las pruebas de sistema encontraron dos defectos que las unitarias y el slice web
 ### Persistencia (H2)
 
 - **Qué es:** `RepositorioReportesH2` es el adaptador de salida que implementa el puerto `RepositorioReportes` con Spring Data JPA (`ReporteJpaRepository`, `ReporteEntity`, `AvistamientoEntity`). Las entidades JPA viven solo en `adaptadores/salida/persistencia/h2`; el dominio no sabe que existen, y lo vigila ArchUnit con la regla `soloLaPersistenciaUsaJpa`.
-- **La base:** H2 en memoria (`jdbc:h2:mem:petfinder`). Con la app corriendo se consulta en `http://localhost:8080/h2-console`, usuario `sa`, sin clave.
+- **La base:** H2 en memoria (`jdbc:h2:mem:petfinder`). La consola viene apagada; con la app corriendo en el perfil `local` (`./mvnw spring-boot:run -Dspring-boot.run.profiles=local`) se consulta en `http://localhost:8080/h2-console`, usuario `sa`, sin clave. Que siga apagada fuera de ese perfil lo comprueba `ConsolaH2SistemaIT`.
 - **Datos de ejemplo:** al arrancar, `DatosDeEjemplo` carga 4 casos para que la demo no empiece vacía. Se apaga con `petfinder.datos-ejemplo=false`. Lo comprueba `DatosDeEjemploIT`.
 - **Qué prueban las 11 de integración:**
   - `RepositorioReportesH2IT` (7): ida y vuelta de pérdidas y hallazgos (mascota, contacto, coordenadas, descripción), id inexistente, filtro de activos por estado, actualización de estado, avistamientos guardados con su reporte y fecha de creación conservada al reconstruir.
