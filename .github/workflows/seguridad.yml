@@ -52,3 +52,41 @@ jobs:
           name: reporte-secretos
           path: gitleaks.sarif
           if-no-files-found: warn
+
+  sast:
+    name: SAST (${{ matrix.lenguaje }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write   # subir los resultados a la pestaña Security
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lenguaje: [java-kotlin, javascript-typescript]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Iniciar CodeQL
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          languages: ${{ matrix.lenguaje }}
+          build-mode: none
+          queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
+      - name: Analizar
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        with:
+          category: /language:${{ matrix.lenguaje }}
+          output: sarif-results
+          upload: always
+      # CodeQL solo reporta. Umbral del enunciado: ningún hallazgo alto o crítico sin tratar (7.0 o más).
+      - name: Umbral de SAST (security-severity 7.0 o más sin tratar detiene el pipeline)
+        run: python3 scripts/umbral-sarif.py sarif-results 7.0 .github/codeql/excepciones.txt
+      - name: Publicar SARIF
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: sarif-${{ matrix.lenguaje }}
+          path: sarif-results/
+          if-no-files-found: warn
