@@ -1,5 +1,9 @@
 package petfinder.adaptadores.entrada.web.dto;
 
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.CORTO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.LARGO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.exigir;
+
 import petfinder.domain.exception.DatosInvalidosException;
 import petfinder.domain.model.Contacto;
 import petfinder.domain.model.Mascota;
@@ -33,7 +37,8 @@ public record SolicitudReporteDTO(
     public record MascotaDTO(String nombre, String especie, String raza, String color, String senas) {
 
         Mascota aMascota() {
-            return new Mascota(nombre, especie, raza, color, senas);
+            return new Mascota(exigir(nombre, CORTO, "nombre de la mascota"), exigir(especie, CORTO, "especie"),
+                    exigir(raza, CORTO, "raza"), exigir(color, CORTO, "color"), exigir(senas, CORTO, "señas"));
         }
     }
 
@@ -52,15 +57,20 @@ public record SolicitudReporteDTO(
     /**
      * Traduce el JSON a la solicitud del dominio usando la fábrica que
      * corresponde al tipo: una pérdida lleva la {@link Mascota}; una encontrada,
-     * solo la descripción de lo que se vio.
+     * solo la descripción de lo que se vio. Antes revisa que cada texto quepa
+     * en su columna (ver {@link LongitudCampos}).
      */
     public SolicitudReporte aSolicitud() {
-        Ubicacion ubicacion = new Ubicacion(zona, referencia, latitud, longitud);
-        Contacto contacto = new Contacto(nombreContacto, medioContacto);
+        Ubicacion ubicacion = new Ubicacion(exigir(zona, CORTO, "zona"), exigir(referencia, CORTO, "referencia"),
+                latitud, longitud);
+        Contacto contacto = new Contacto(exigir(nombreContacto, CORTO, "nombre de contacto"),
+                exigir(medioContacto, CORTO, "medio de contacto"));
+        String detalle = exigir(descripcion, LARGO, "descripción");
         if (tipoReporte() == TipoReporte.PERDIDA) {
             Mascota datosMascota = mascota == null ? null : mascota.aMascota();
-            return SolicitudReporte.paraPerdida(ubicacion, descripcion, contacto, datosMascota);
+            return SolicitudReporte.paraPerdida(ubicacion, detalle, contacto, datosMascota);
         }
-        return SolicitudReporte.paraEncontrada(ubicacion, descripcion, contacto, descripcionMascota);
+        return SolicitudReporte.paraEncontrada(ubicacion, detalle, contacto,
+                exigir(descripcionMascota, LARGO, "descripción de la mascota"));
     }
 }

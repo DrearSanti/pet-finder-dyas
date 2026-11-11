@@ -1,5 +1,8 @@
 package petfinder.adaptadores.entrada.web;
 
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.CORTO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.exigir;
+
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -30,6 +33,16 @@ public class VozController {
 
     /** Frase transcrita y, para registrar, el contacto de quien habla. */
     public record ComandoVozDTO(String texto, String nombreContacto, String medioContacto) {
+
+        /**
+         * La frase no necesita tope aquí: el intérprete ignora todo lo que pase
+         * de {@code InterpreteComandoVoz.LONGITUD_MAXIMA}. El contacto sí, porque
+         * se guarda tal cual en el reporte.
+         */
+        Contacto contacto() {
+            return new Contacto(exigir(nombreContacto, CORTO, "nombre de contacto"),
+                    exigir(medioContacto, CORTO, "medio de contacto"));
+        }
     }
 
     /** Qué entendió el sistema, qué respondió y los reportes involucrados (en resumen). */
@@ -47,8 +60,7 @@ public class VozController {
 
     @PostMapping("/api/voz")
     public ResponseEntity<?> procesar(@RequestBody ComandoVozDTO comando) {
-        ResultadoComandoVoz resultado = procesador.procesar(comando.texto(),
-                new Contacto(comando.nombreContacto(), comando.medioContacto()));
+        ResultadoComandoVoz resultado = procesador.procesar(comando.texto(), comando.contacto());
 
         if (resultado.accion() == AccionVoz.NO_RECONOCIDO) {
             return ResponseEntity.status(NO_ENTENDIDO).body(new CuerpoError(resultado.mensaje()));

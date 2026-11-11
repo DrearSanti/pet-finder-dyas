@@ -1,5 +1,9 @@
 package petfinder.adaptadores.entrada.web.dto;
 
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.CORTO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.LARGO;
+import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.exigir;
+
 import java.time.LocalDateTime;
 
 import petfinder.domain.model.Avistamiento;
@@ -34,13 +38,16 @@ public record AvistamientoDTO(
     /**
      * Crea el avistamiento del dominio con el id y la hora que asigna el
      * controlador. Sin nombre ni medio de contacto no se inventa un
-     * {@link Contacto} vacío: queda {@code null}.
+     * {@link Contacto} vacío: queda {@code null}. Cada texto se revisa contra
+     * el tamaño de su columna (ver {@link LongitudCampos}).
      */
     public Avistamiento aAvistamiento(String id, LocalDateTime fechaHora) {
-        Ubicacion ubicacion = new Ubicacion(zona, referencia, latitud, longitud);
+        Ubicacion ubicacion = new Ubicacion(exigir(zona, CORTO, "zona"), exigir(referencia, CORTO, "referencia"),
+                latitud, longitud);
         boolean sinContacto = estaVacio(nombreContacto) && estaVacio(medioContacto);
-        Contacto contacto = sinContacto ? null : new Contacto(nombreContacto, medioContacto);
-        return new Avistamiento(id, fechaHora, ubicacion, descripcion, contacto, tipo);
+        Contacto contacto = sinContacto ? null : new Contacto(exigir(nombreContacto, CORTO, "nombre de contacto"),
+                exigir(medioContacto, CORTO, "medio de contacto"));
+        return new Avistamiento(id, fechaHora, ubicacion, exigir(descripcion, LARGO, "descripción"), contacto, tipo);
     }
 
     private static boolean estaVacio(String valor) {

@@ -1,15 +1,19 @@
 package petfinder.application.asistente;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -192,5 +196,57 @@ class ExtractorRegexTest {
         Optional<BorradorReporte> resultado = extraer(frase);
         // Assert
         assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Con dos espacios antes del segundo 'en' la zona sigue siendo el último lugar")
+    void zonaConEspaciosDoblesAntesDelEn() {
+        // Arrange + Act
+        BorradorReporte borrador = extraer("tengo en mi casa una gatita gris que apareció  en el portal").orElseThrow();
+        // Assert
+        assertEquals("El portal", borrador.zona());
+    }
+
+    @Test
+    @DisplayName("Un correo con subdominios sigue reconocido con las expresiones acotadas")
+    void correoConSubdominios() {
+        // Arrange + Act
+        BorradorReporte borrador = extraer("encontré un perro, mi correo es ana.ruiz+pf@correo.uni.edu.co").orElseThrow();
+        // Assert
+        assertEquals("ana.ruiz+pf@correo.uni.edu.co", borrador.contactoMedio());
+    }
+
+    /**
+     * Formas que hacían trabajar de más a una expresión: letras sin arroba
+     * (correo), una racha de espacios después de "en" (zona), dígitos
+     * (celular), y los anuncios de nombre y contacto seguidos de espacios.
+     */
+    static Stream<String> textosDe100KB() {
+        int tamano = 100 * 1024;
+        return Stream.of(
+                "a".repeat(tamano),
+                "a.".repeat(tamano / 2),
+                "en" + " ".repeat(tamano) + "x",
+                "en Chía " + " en".repeat(tamano / 3),
+                "3".repeat(tamano),
+                "se" + " ".repeat(tamano),
+                "mi" + " ".repeat(tamano));
+    }
+
+    /**
+     * 100 KB es cien veces el tope del asistente. Si el extractor responde en
+     * menos de un segundo con eso, ninguna frase que pase el tope lo traba.
+     * Antes de acotar las expresiones, 100 KB de letras tardaban 17 segundos.
+     * Corre en otro hilo para que la prueba falle al segundo y no al terminar.
+     */
+    @ParameterizedTest(name = "[{index}] responde en menos de 1 s")
+    @DisplayName("100 KB de texto hostil se procesan en menos de un segundo")
+    @MethodSource("textosDe100KB")
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void textoLargoNoTrabaElExtractor(String texto) {
+        // Arrange + Act
+        Optional<BorradorReporte> resultado = extraer(texto);
+        // Assert: lo que se mide es el tiempo; basta con que haya respuesta
+        assertNotNull(resultado);
     }
 }
