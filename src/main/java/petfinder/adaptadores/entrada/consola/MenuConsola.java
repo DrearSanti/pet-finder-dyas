@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Scanner;
 
-import petfinder.application.service.ServicioAvistamientos;
-import petfinder.application.service.ServicioReportes;
+import petfinder.application.port.entrada.RegistroAvistamientos;
+import petfinder.application.port.entrada.GestionReportes;
 import petfinder.domain.exception.DominioException;
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;
@@ -26,15 +26,15 @@ import petfinder.domain.model.Ubicacion;
  */
 public class MenuConsola {
 
-    private final ServicioReportes servicioReportes;
-    private final ServicioAvistamientos servicioAvistamientos;
+    private final GestionReportes servicioReportes;
+    private final RegistroAvistamientos servicioAvistamientos;
     private final Scanner entrada = new Scanner(System.in);
 
     /** Consecutivo local de avistamientos; los reportes los numera el dominio. */
     private int consecutivoAvistamiento = 0;
 
-    public MenuConsola(ServicioReportes servicioReportes,
-                       ServicioAvistamientos servicioAvistamientos) {
+    public MenuConsola(GestionReportes servicioReportes,
+                       RegistroAvistamientos servicioAvistamientos) {
         this.servicioReportes = servicioReportes;
         this.servicioAvistamientos = servicioAvistamientos;
     }

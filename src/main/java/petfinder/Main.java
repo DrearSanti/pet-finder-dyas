@@ -4,8 +4,8 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import petfinder.application.service.ServicioAvistamientos;
-import petfinder.application.service.ServicioReportes;
+import petfinder.application.port.entrada.RegistroAvistamientos;
+import petfinder.application.port.entrada.GestionReportes;
 import petfinder.domain.observer.AlertaPropietarioObserver;
 import petfinder.domain.observer.AuditoriaObserver;
 import petfinder.domain.observer.PublicadorAvistamientos;
@@ -30,8 +30,8 @@ public class Main {
                 .properties("spring.main.banner-mode=off", "logging.level.root=WARN")
                 .run(args)) {
 
-            ServicioReportes servicioReportes = contexto.getBean(ServicioReportes.class);
-            ServicioAvistamientos servicioAvistamientos = contexto.getBean(ServicioAvistamientos.class);
+            GestionReportes servicioReportes = contexto.getBean(GestionReportes.class);
+            RegistroAvistamientos servicioAvistamientos = contexto.getBean(RegistroAvistamientos.class);
 
             if (tieneBandera(args, "--menu")) {
                 new MenuConsola(servicioReportes, servicioAvistamientos).ejecutar();
