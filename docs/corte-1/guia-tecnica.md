@@ -1,6 +1,8 @@
-# Pet Finder — Guía técnica
+# Pet Finder — Guía técnica del Corte 1
 
-Instrucciones de compilación, ejecución y pruebas. La documentación conceptual del proyecto está en [`README.md`](README.md).
+> Esta guía es del Corte 1, cuando Pet Finder era un programa de consola que se compilaba con Maven instalado. **Hoy no hace falta instalar Maven**: el proyecto trae el Maven Wrapper (`./mvnw`, o `.\mvnw.cmd` en PowerShell) y los pasos vigentes, para macOS, Git Bash y PowerShell, están en [Cómo ejecutar](../../README.md#cómo-ejecutar). Se conserva como registro de esa versión; la estructura de carpetas que describe abajo es la de entonces.
+
+Instrucciones de compilación, ejecución y pruebas de la versión de consola. La documentación conceptual del Corte 1 está en [`README.md`](README.md) de esta misma carpeta.
 
 ---
 

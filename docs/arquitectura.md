@@ -59,7 +59,7 @@ Se compararon **Capas, MVC, Hexagonal y Microservicios** contra seis criterios q
 
 ## 4. Arquitectura inicial (Corte 1) y arquitectura evolucionada (Corte 2), con diagramas
 
-Los diagramas están en **[`docs/diagramas/c4.md`](diagramas/c4.md)**: el del Corte 1 y los C4 del Corte 2 en tres niveles (contexto, contenedores y componentes). El diagrama de clases del Corte 1 sigue en [`docs/uml/diagrama-clases.mmd`](uml/diagrama-clases.mmd).
+Los diagramas están en **[`docs/diagramas/c4.md`](diagramas/c4.md)**: el del Corte 1 y los C4 del Corte 2 en tres niveles (contexto, contenedores y componentes). El diagrama de clases del Corte 1 sigue en [`docs/corte-1/uml/diagrama-clases.mmd`](corte-1/uml/diagrama-clases.mmd).
 
 | | Corte 1 | Corte 2 |
 |---|---|---|
