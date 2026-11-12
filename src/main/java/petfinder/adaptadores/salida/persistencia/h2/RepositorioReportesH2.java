@@ -30,10 +30,28 @@ import petfinder.domain.model.Ubicacion;
  */
 public class RepositorioReportesH2 implements RepositorioReportes {
 
+    /** Tope de la lista si nadie lo configura: los 200 casos activos más recientes. */
+    public static final int MAXIMO_POR_OMISION = 200;
+
     private final ReporteJpaRepository jpa;
 
+    /**
+     * Cuántos casos activos devuelve la lista como máximo. Sin tope, la lista
+     * crecía con cada caso: en la carga del Corte 2, con más de 10 000 casos,
+     * una sola respuesta pesaba 5,2 MB.
+     */
+    private final int maximoLista;
+
     public RepositorioReportesH2(ReporteJpaRepository jpa) {
+        this(jpa, MAXIMO_POR_OMISION);
+    }
+
+    public RepositorioReportesH2(ReporteJpaRepository jpa, int maximoLista) {
+        if (maximoLista < 1) {
+            throw new IllegalArgumentException("El tope de la lista debe ser al menos 1: " + maximoLista);
+        }
         this.jpa = jpa;
+        this.maximoLista = maximoLista;
     }
 
     @Override
@@ -56,7 +74,7 @@ public class RepositorioReportesH2 implements RepositorioReportes {
     @Override
     @Transactional(readOnly = true)
     public List<ReporteMascota> listarActivos() {
-        return jpa.findByEstadoOrderByFechaCreacionDesc(EstadoReporte.ACTIVO).stream()
+        return jpa.recientesConAvistamientos(EstadoReporte.ACTIVO, maximoLista).stream()
                 .map(RepositorioReportesH2::aDominio)
                 .toList();
     }

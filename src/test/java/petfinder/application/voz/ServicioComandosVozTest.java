@@ -122,6 +122,22 @@ class ServicioComandosVozTest {
     }
 
     @Test
+    @DisplayName("Con más de 10 casos, ver reportes nombra los 10 más recientes y dice cuántos hay")
+    void listarConMasDeDiezNombraLosDiezMasRecientes() {
+        // Arrange
+        List<ReporteMascota> activos = java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(i -> (ReporteMascota) new ReporteEncontrada("PF-1" + i, new Ubicacion("Suba", "Portal"),
+                        "Estaba sola", "Perro café", CAMILA))
+                .toList();
+        when(gestionReportes.listarActivos()).thenReturn(activos);
+        // Act
+        ResultadoComandoVoz resultado = servicio.procesar("ver reportes", CAMILA);
+        // Assert
+        assertEquals(activos.subList(0, 10), resultado.reportes());
+        assertEquals("Hay 12 reportes activos. Estos son los 10 más recientes.", resultado.mensaje());
+    }
+
+    @Test
     @DisplayName("Consultar un reporte por voz pide ese identificador al caso de uso")
     void consultarPideElIdentificador() {
         // Arrange

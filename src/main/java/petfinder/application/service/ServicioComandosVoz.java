@@ -30,6 +30,9 @@ public class ServicioComandosVoz implements ProcesadorComandosVoz {
     /** Raza, color y señas no se dictan en el comando corto; se completan después. */
     static final String NO_INDICADO = "No indicado";
 
+    /** Cuántos casos nombra "ver reportes" por voz. */
+    static final int MAXIMO_POR_VOZ = 10;
+
     private final InterpreteComandoVoz interprete;
     private final GestionReportes gestionReportes;
 
@@ -74,8 +77,19 @@ public class ServicioComandosVoz implements ProcesadorComandosVoz {
                 List.of(reporte));
     }
 
+    /**
+     * Por voz se nombran como mucho los 10 más recientes y se dice cuántos hay
+     * en total: nadie escucha una lista de 200 casos, y la respuesta de
+     * "ver reportes" era la más pesada de la prueba de carga. La lista llega
+     * ordenada del más reciente al más antiguo.
+     */
     private ResultadoComandoVoz listarActivos() {
         List<ReporteMascota> activos = gestionReportes.listarActivos();
+        if (activos.size() > MAXIMO_POR_VOZ) {
+            return new ResultadoComandoVoz(AccionVoz.LISTAR_ACTIVOS,
+                    "Hay " + activos.size() + " reportes activos. Estos son los " + MAXIMO_POR_VOZ + " más recientes.",
+                    activos.subList(0, MAXIMO_POR_VOZ));
+        }
         String mensaje = switch (activos.size()) {
             case 0 -> "No hay reportes activos.";
             case 1 -> "Hay 1 reporte activo.";
