@@ -16,6 +16,7 @@ import petfinder.application.service.ServicioReportes;
 import petfinder.domain.factory.CreadorReporte;
 import petfinder.domain.factory.CreadorReporteEncontrada;
 import petfinder.domain.factory.CreadorReportePerdida;
+import petfinder.domain.model.CodigoGestion;
 import petfinder.domain.model.GeneradorIdReportes;
 import petfinder.domain.model.TipoReporte;
 import petfinder.domain.observer.AlertaPropietarioObserver;
@@ -83,10 +84,31 @@ public class ConfiguracionPetFinder {
         return publicador;
     }
 
+    /** Un código de administrador más corto que esto se adivina; la app no arranca con él. */
+    static final int LARGO_MINIMO_CODIGO_ADMIN = 20;
+
+    /**
+     * El código de administrador (PETFINDER_CODIGO_ADMIN) resuelve o cierra
+     * cualquier caso, incluidos los de ejemplo y los publicados antes del
+     * código de gestión. Aquí se convierte en huella y el servicio nunca ve el
+     * valor; tampoco se escribe en el log. Vacío significa "sin administrador".
+     */
     @Bean
     public ServicioReportes servicioReportes(RepositorioReportes repositorio,
-                                             Map<TipoReporte, CreadorReporte> creadores) {
-        return new ServicioReportes(repositorio, creadores);
+                                             Map<TipoReporte, CreadorReporte> creadores,
+                                             @Value("${petfinder.codigo-admin:}") String codigoAdmin) {
+        return new ServicioReportes(repositorio, creadores, huellaAdministrador(codigoAdmin));
+    }
+
+    static String huellaAdministrador(String codigoAdmin) {
+        if (codigoAdmin == null || codigoAdmin.isBlank()) {
+            return null;
+        }
+        if (codigoAdmin.strip().length() < LARGO_MINIMO_CODIGO_ADMIN) {
+            throw new IllegalStateException("PETFINDER_CODIGO_ADMIN debe tener al menos "
+                    + LARGO_MINIMO_CODIGO_ADMIN + " caracteres (genera uno con: openssl rand -base64 24)");
+        }
+        return CodigoGestion.huellaDe(codigoAdmin.strip());
     }
 
     @Bean

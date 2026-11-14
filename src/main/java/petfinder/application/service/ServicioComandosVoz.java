@@ -4,6 +4,7 @@ import java.util.List;
 
 import petfinder.application.port.entrada.GestionReportes;
 import petfinder.application.port.entrada.ProcesadorComandosVoz;
+import petfinder.application.port.entrada.ReportePublicado;
 import petfinder.application.service.InterpreteComandoVoz.Comando;
 import petfinder.domain.model.Contacto;
 import petfinder.domain.model.Mascota;
@@ -61,20 +62,22 @@ public class ServicioComandosVoz implements ProcesadorComandosVoz {
         Mascota mascota = new Mascota(comando.nombre(), comando.especie(), NO_INDICADO, NO_INDICADO, NO_INDICADO);
         SolicitudReporte solicitud = SolicitudReporte.paraPerdida(
                 new Ubicacion(comando.zona(), REFERENCIA_VOZ), frase, contacto, mascota);
-        ReporteMascota reporte = gestionReportes.registrar(TipoReporte.PERDIDA, solicitud);
+        ReportePublicado publicado = gestionReportes.publicar(TipoReporte.PERDIDA, solicitud);
+        ReporteMascota reporte = publicado.reporte();
         return new ResultadoComandoVoz(AccionVoz.REGISTRAR_PERDIDA,
                 "Registré la pérdida de " + comando.nombre() + " en " + comando.zona()
                         + " con el código " + reporte.getId() + ".",
-                List.of(reporte));
+                List.of(reporte), publicado.codigoGestion());
     }
 
     private ResultadoComandoVoz registrarEncontrada(Comando comando, String frase, Contacto contacto) {
         SolicitudReporte solicitud = SolicitudReporte.paraEncontrada(
                 new Ubicacion(comando.zona(), REFERENCIA_VOZ), frase, contacto, comando.descripcion());
-        ReporteMascota reporte = gestionReportes.registrar(TipoReporte.ENCONTRADA, solicitud);
+        ReportePublicado publicado = gestionReportes.publicar(TipoReporte.ENCONTRADA, solicitud);
+        ReporteMascota reporte = publicado.reporte();
         return new ResultadoComandoVoz(AccionVoz.REGISTRAR_ENCONTRADA,
                 "Registré el hallazgo en " + comando.zona() + " con el código " + reporte.getId() + ".",
-                List.of(reporte));
+                List.of(reporte), publicado.codigoGestion());
     }
 
     /**

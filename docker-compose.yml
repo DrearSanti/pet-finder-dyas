@@ -22,6 +22,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       PETFINDER_IA_MODELO: ${PETFINDER_IA_MODELO:-claude-sonnet-5}
       PETFINDER_IA_TOPE_DIARIO: ${PETFINDER_IA_TOPE_DIARIO:-200}
+      # Código de administrador (S9): vacío = sin administrador; si se define, 20 caracteres o más
+      PETFINDER_CODIGO_ADMIN: ${PETFINDER_CODIGO_ADMIN:-}
     depends_on:
       db:
         condition: service_healthy

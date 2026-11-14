@@ -5,6 +5,8 @@ import static petfinder.adaptadores.entrada.web.dto.LongitudCampos.exigir;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,8 +47,13 @@ public class VozController {
         }
     }
 
-    /** Qué entendió el sistema, qué respondió y los reportes involucrados (en resumen). */
-    public record RespuestaVozDTO(AccionVoz accion, String mensaje, List<ReporteDTO> reportes) {
+    /**
+     * Qué entendió el sistema, qué respondió y los reportes involucrados (en
+     * resumen). {@code codigoGestion} solo viene al publicar (S9): es la única
+     * vez que se entrega, así que en los demás comandos ni aparece.
+     */
+    public record RespuestaVozDTO(AccionVoz accion, String mensaje, List<ReporteDTO> reportes,
+                                  @JsonInclude(JsonInclude.Include.NON_NULL) String codigoGestion) {
     }
 
     /** 422: la petición llegó bien formada, pero la frase no corresponde a ningún comando. */
@@ -66,7 +73,7 @@ public class VozController {
             return ResponseEntity.status(NO_ENTENDIDO).body(new CuerpoError(resultado.mensaje()));
         }
         RespuestaVozDTO respuesta = new RespuestaVozDTO(resultado.accion(), resultado.mensaje(),
-                resultado.reportes().stream().map(ReporteDTO::resumen).toList());
+                resultado.reportes().stream().map(ReporteDTO::resumen).toList(), resultado.codigoGestion());
         return ResponseEntity.status(creaReporte(resultado.accion()) ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(respuesta);
     }

@@ -62,6 +62,10 @@ public class ReporteEntity {
     @Column(length = 2000)
     private String descripcionMascota;
 
+    /** SHA-256 del código de gestión (S9). Nunca el código: solo con esto no se puede cerrar un caso. */
+    @Column(length = 64)
+    private String huellaCodigo;
+
     @OneToMany(mappedBy = "reporte", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("fechaHora ASC")
     private List<AvistamientoEntity> avistamientos = new ArrayList<>();
@@ -100,5 +104,7 @@ public class ReporteEntity {
     public void setMascotaSenas(String mascotaSenas) { this.mascotaSenas = mascotaSenas; }
     public String getDescripcionMascota() { return descripcionMascota; }
     public void setDescripcionMascota(String descripcionMascota) { this.descripcionMascota = descripcionMascota; }
+    public String getHuellaCodigo() { return huellaCodigo; }
+    public void setHuellaCodigo(String huellaCodigo) { this.huellaCodigo = huellaCodigo; }
     public List<AvistamientoEntity> getAvistamientos() { return avistamientos; }
 }
