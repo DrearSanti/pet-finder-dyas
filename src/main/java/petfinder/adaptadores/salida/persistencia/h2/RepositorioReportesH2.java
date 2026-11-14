@@ -93,6 +93,7 @@ public class RepositorioReportesH2 implements RepositorioReportes {
         fila.setEstado(reporte.getEstado());
         fila.setFechaCreacion(reporte.getFechaCreacion());
         fila.setDescripcion(reporte.getDescripcion());
+        fila.setHuellaCodigo(reporte.getHuellaCodigo());
         Ubicacion u = reporte.getUbicacion();
         fila.setZona(u.zonaOBarrio());
         fila.setReferencia(u.referencia());
@@ -138,7 +139,16 @@ public class RepositorioReportesH2 implements RepositorioReportes {
         return fila;
     }
 
+    /** Reconstruye el caso y le devuelve la huella de su código, si la tiene (los casos viejos no). */
     private static ReporteMascota aDominio(ReporteEntity fila) {
+        ReporteMascota reporte = sinHuella(fila);
+        if (fila.getHuellaCodigo() != null) {
+            reporte.protegerConHuella(fila.getHuellaCodigo());
+        }
+        return reporte;
+    }
+
+    private static ReporteMascota sinHuella(ReporteEntity fila) {
         Ubicacion ubicacion = new Ubicacion(fila.getZona(), fila.getReferencia(), fila.getLatitud(), fila.getLongitud());
         Contacto contacto = new Contacto(fila.getContactoNombre(), fila.getContactoMedio());
         if (fila.getTipo() == TipoReporte.PERDIDA) {

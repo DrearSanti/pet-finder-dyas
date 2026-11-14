@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 import petfinder.application.port.entrada.RegistroAvistamientos;
 import petfinder.application.port.entrada.GestionReportes;
+import petfinder.application.port.entrada.ReportePublicado;
 import petfinder.domain.exception.DominioException;
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;
@@ -100,10 +101,9 @@ public class MenuConsola {
                 leer("Color"),
                 leer("Senas particulares"));
 
-        ReporteMascota reporte = servicioReportes.registrar(
+        mostrarPublicado(servicioReportes.publicar(
                 TipoReporte.PERDIDA,
-                SolicitudReporte.paraPerdida(ubicacion, descripcion, contacto, mascota));
-        System.out.println("Reporte creado: " + reporte.getId());
+                SolicitudReporte.paraPerdida(ubicacion, descripcion, contacto, mascota)));
     }
 
     private void registrarEncontrada() {
@@ -112,11 +112,17 @@ public class MenuConsola {
         Contacto contacto = leerContacto("reportante");
         String descripcionMascota = leer("Describa la mascota encontrada");
 
-        ReporteMascota reporte = servicioReportes.registrar(
+        mostrarPublicado(servicioReportes.publicar(
                 TipoReporte.ENCONTRADA,
                 SolicitudReporte.paraEncontrada(
-                        ubicacion, descripcion, contacto, descripcionMascota));
-        System.out.println("Reporte creado: " + reporte.getId());
+                        ubicacion, descripcion, contacto, descripcionMascota)));
+    }
+
+    /** El código de gestión se muestra una sola vez: después solo queda su huella. */
+    private static void mostrarPublicado(ReportePublicado publicado) {
+        System.out.println("Reporte creado: " + publicado.reporte().getId());
+        System.out.println("Codigo de gestion: " + publicado.codigoGestion());
+        System.out.println("Guardelo: sin el no podra resolver ni cerrar el caso.");
     }
 
     private void listarActivos() {
@@ -154,11 +160,12 @@ public class MenuConsola {
 
     private void cambiarEstado(boolean resolver) {
         String id = leer("Identificador del reporte");
+        String codigo = leer("Codigo de gestion");
         if (resolver) {
-            servicioReportes.resolver(id);
+            servicioReportes.resolver(id, codigo);
             System.out.println("Reporte " + id + " marcado como RESUELTO.");
         } else {
-            servicioReportes.cerrar(id);
+            servicioReportes.cerrar(id, codigo);
             System.out.println("Reporte " + id + " CERRADO.");
         }
     }

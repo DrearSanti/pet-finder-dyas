@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import petfinder.application.port.entrada.RegistroAvistamientos;
 import petfinder.application.port.entrada.GestionReportes;
+import petfinder.application.port.entrada.ReportePublicado;
 import petfinder.domain.exception.DominioException;
 import petfinder.domain.model.Avistamiento;
 import petfinder.domain.model.Contacto;
@@ -52,7 +53,7 @@ public class EscenarioDemostracion {
         System.out.println("  - AuditoriaObserver");
 
         paso(2, "Se registra la perdida de Luna");
-        ReporteMascota perdida = servicioReportes.registrar(
+        ReportePublicado publicada = servicioReportes.publicar(
                 TipoReporte.PERDIDA,
                 SolicitudReporte.paraPerdida(
                         new Ubicacion("Cedritos", "Cerca del parque de la 140"),
@@ -60,17 +61,19 @@ public class EscenarioDemostracion {
                         new Contacto("Camila Rojas", "3001234567"),
                         new Mascota("Luna", "Perro", "Criolla", "Blanca",
                                 "Mancha negra en el lomo")));
+        ReporteMascota perdida = publicada.reporte();
         System.out.println("  Creado: " + perdida.getId());
+        System.out.println("  Codigo de gestion entregado a la propietaria: " + publicada.codigoGestion());
         System.out.println("  " + perdida.resumen());
 
         paso(3, "Se registra una mascota encontrada");
-        ReporteMascota encontrada = servicioReportes.registrar(
+        ReporteMascota encontrada = servicioReportes.publicar(
                 TipoReporte.ENCONTRADA,
                 SolicitudReporte.paraEncontrada(
                         new Ubicacion("Bella Suiza", "Frente a la panaderia"),
                         "Estaba solo en el anden, se ve bien cuidado",
                         new Contacto("Andres Melo", "andres@correo.com"),
-                        "Gato gris con collar azul sin placa"));
+                        "Gato gris con collar azul sin placa")).reporte();
         System.out.println("  Creado: " + encontrada.getId());
         System.out.println("  " + encontrada.resumen());
 
@@ -102,7 +105,7 @@ public class EscenarioDemostracion {
                 + " retirado ya no recibe eventos.)");
 
         paso(8, "El propietario marca " + perdida.getId() + " como RESUELTO");
-        servicioReportes.resolver(perdida.getId());
+        servicioReportes.resolver(perdida.getId(), publicada.codigoGestion());
         System.out.println("  " + servicioReportes.consultar(perdida.getId()).resumen());
 
         paso(9, "Reportes activos despues de resolver");

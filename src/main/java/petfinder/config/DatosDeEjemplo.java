@@ -41,22 +41,22 @@ public class DatosDeEjemplo implements ApplicationRunner {
         if (repositorio.ultimoNumeroDeId() > 0) {
             return;
         }
-        gestion.registrar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
+        gestion.publicar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
                 new Ubicacion("Cedritos", "Parque de la 147", 4.7235, -74.0417),
                 "Se escapó del conjunto esta tarde. Es tímida: si la ves, no la persigas.",
                 new Contacto("Camila", "3001234567"),
                 new Mascota("Luna", "perro", "criolla", "blanca", "mancha negra en el lomo, collar rojo")));
-        gestion.registrar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
+        gestion.publicar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
                 new Ubicacion("Usaquén", "Parque de Usaquén", 4.6946, -74.0302),
                 "Salió corriendo cuando abrieron la puerta.",
                 new Contacto("Andrés", "3109876543"),
                 new Mascota("Max", "perro", "labrador", "café", "collar azul")));
-        gestion.registrar(TipoReporte.ENCONTRADA, SolicitudReporte.paraEncontrada(
+        gestion.publicar(TipoReporte.ENCONTRADA, SolicitudReporte.paraEncontrada(
                 new Ubicacion("Calle 147", "Portal de un edificio", 4.7303, -74.0460),
                 "Apareció en el portal y la tengo en casa.",
                 new Contacto("Lorenzi", "3007654321"),
                 "Gata gris adulta, muy mansa, sin collar"));
-        gestion.registrar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
+        gestion.publicar(TipoReporte.PERDIDA, SolicitudReporte.paraPerdida(
                 new Ubicacion("Suba", "Centro comercial Santafé", 4.7417, -74.0833),
                 "Se perdió en el parqueadero.",
                 new Contacto("Sofía", "sofia@correo.co"),
