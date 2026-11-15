@@ -15,7 +15,7 @@ macOS, Linux y **Git Bash** en Windows (en PowerShell cambia `./mvnw` por `.\mvn
 | Unitarias + ArchUnit + slice web (`*Test`) | `./mvnw -q test` |
 | Una clase de prueba | `./mvnw -q test -Dtest=Clase` |
 | Integración y sistema (`*IT`) + JaCoCo | `./mvnw -q clean verify` |
-| Una sola IT | `./mvnw -q verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=Clase` |
+| Una sola IT | `./mvnw -q verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=Clase -Djacoco.skip=true` |
 | Pruebas de UI (`*UIT`, necesita Chrome) | `./mvnw -q -Pui verify` |
 | Empaquetar | `./mvnw -q -DskipTests package` → `target/pet-finder.jar` |
 | Humo del jar | `sh scripts/humo.sh [/ruta ...]` |
@@ -26,6 +26,7 @@ macOS, Linux y **Git Bash** en Windows (en PowerShell cambia `./mvnw` por `.\mvn
 | Consola H2 (solo perfil `local`) | `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` → http://localhost:8080/h2-console · `jdbc:h2:mem:petfinder` · usuario `sa`, sin clave |
 
 **Gate de cualquier tarea:** `./mvnw -q clean verify` en verde. JDK 17 obligatorio (`./mvnw -v` debe decir `Java version: 17`). No instales Maven: el wrapper descarga el 3.9.16.
+El umbral de cobertura (70 % de líneas de `petfinder/domain`) corre en `verify`. En comandos que corren solo algunas IT, agrega `-Djacoco.skip=true`.
 
 ## Cómo trabajar con el blueprint
 
