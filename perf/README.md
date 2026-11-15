@@ -110,6 +110,7 @@ Los archivos de k6 están en `perf/resultados/baseline.json` y `perf/resultados/
 |---|---|---|---|---|---|---|---|---|
 | Baseline | 5 | 1 min | 14,0 ms | 10,9 ms | 14,4 ms | 9,8 | 0 % (0 de 590) | Sí en latencia y errores. El mínimo de 30 req/s no aplica: 5 usuarios con una pausa de 1 s no pueden pasar de unas 10 req/s |
 | Carga | 50 | 4 min 30 s | 89,2 ms | 15,7 ms | 106,1 ms | 79,2 | 0 % (0 de 21.442) | **Sí, los tres criterios**: p95 de 89 ms frente a 500, 0 % de errores frente a 1 % y 79 req/s frente a 30 |
+| Carga tras S8 (2026-11-11, `a64a6ff` + S8) | 50 | 4 min 30 s | 7,2 ms | 4,2 ms | 9,4 ms | 81,0 | 0 % (0 de 21.918) | **Sí, los tres criterios.** Otra máquina: ver "Después de S8" |
 
 ### Las dos operaciones, lado a lado
 
@@ -119,6 +120,8 @@ Los archivos de k6 están en `perf/resultados/baseline.json` y `perf/resultados/
 | Baseline | `voz_listar` | 295 | 9,8 ms | 9,6 ms | 14,4 ms | 16,4 ms | 17,2 ms |
 | Carga | `voz_registrar` | 10.721 | 3,7 ms | 1,3 ms | 15,7 ms | 25,3 ms | 59,5 ms |
 | Carga | `voz_listar` | 10.721 | 48,5 ms | 45,7 ms | 106,1 ms | 156,2 ms | 291,5 ms |
+| Carga tras S8 | `voz_registrar` | 10.959 | 2,0 ms | 1,5 ms | 4,2 ms | 8,3 ms | 96,9 ms |
+| Carga tras S8 | `voz_listar` | 10.959 | 27,7 ms | 4,4 ms | 9,4 ms | 907,2 ms | 1.435,3 ms |
 
 ### Recursos de la app
 
@@ -164,6 +167,18 @@ Coincide exacto: con 50 usuarios registrando a la vez no se perdió ni se duplic
 Una consulta para la lista de reportes más una por cada pérdida para cargar sus avistamientos: crece en línea con el número de casos. Extrapolando con esa relación lineal (aritmética, no medición), cada `ver reportes` con 10.725 casos ejecuta unas 10.725 consultas. Detalle en `perf/resultados/consultas-n-mas-1.json`.
 
 3. **El SLO se cumple porque H2 está en el mismo proceso.** Cada consulta cuesta apenas unos microsegundos, y por eso 10.725 consultas caben en unos 60 ms. Esto es un hallazgo, no una garantía: si cada consulta viajara por una red hasta una base remota y costara 1 ms, serían unos 10 s por listado. Es una cuenta, no una medición.
+
+## Después de S8: una consulta y un tope (Corte 3)
+
+El cuello de botella se corrigió dentro del adaptador de persistencia, como anticipaba la sección siguiente:
+
+- **Una sola consulta.** `RepositorioReportesH2.listarActivos()` usa `ReporteJpaRepository.recientesConAvistamientos`: `left join fetch` de los avistamientos y el tope en una subconsulta de identificadores. Con `generate_statistics`, `ConsultasListaH2IT` exige exactamente 1 sentencia preparada al listar casos con avistamientos.
+- **Tope de 200 casos**, los más recientes primero (`petfinder.lista.maximo`, variable `PETFINDER_LISTA_MAXIMO`). El puerto no cambió de firma: `GET /api/reportes` sigue devolviendo un arreglo. Al terminar la carga, con más de 10.000 casos en la base, la lista pesaba 131 KB (200 casos); antes, 5,2 MB.
+- **"ver reportes" por voz** nombra como mucho los 10 más recientes y dice cuántos hay en total.
+
+Resultado de la misma carga (`perf/scripts/carga.js`, archivo `perf/resultados/carga-s8.json`): el p95 de `voz_listar` bajó de 106,1 ms a **9,4 ms** y quedó cerca del de `voz_registrar` (4,2 ms). Errores: 0 de 21.918.
+
+**Cuidado al comparar.** Esta corrida no se hizo en la máquina del Corte 2: fue en un Windows 11 con AMD Ryzen 7 7730U (16 hilos) y 15 GB de RAM, el jar con OpenJDK 21.0.12 y sin `ANTHROPIC_API_KEY`, k6 v2.2.0 en la misma máquina, el 11 de noviembre de 2026. La mejora de la mediana de `voz_listar` (45,7 ms a 4,4 ms) es demasiado grande para explicarla solo por la máquina, pero la cifra exacta no es comparable uno a uno. Además, el p99 de `voz_listar` fue de 907 ms y el máximo de 1,4 s: hay pocas respuestas muy lentas que esta corrida no explica (puede ser el recolector de memoria o la máquina compartida con k6). Es una sola corrida.
 
 ## Qué ofrece la arquitectura y qué no
 
