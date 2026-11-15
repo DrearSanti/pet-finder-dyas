@@ -25,7 +25,7 @@ Desde la raíz del proyecto. En macOS, Linux y **Git Bash** de Windows se usa `.
 | Unitarias, ArchUnit y slice web (`*Test`) | `./mvnw test` | `.\mvnw.cmd test` |
 | Una sola clase | `./mvnw test -Dtest=MapeoDtoTest` | `.\mvnw.cmd test "-Dtest=MapeoDtoTest"` |
 | Todo: unitarias + integración + sistema (`*IT`) + cobertura | `./mvnw verify` | `.\mvnw.cmd verify` |
-| Solo las pruebas de sistema | `./mvnw verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT,FlujoHallazgoSistemaIT'` | `.\mvnw.cmd verify "-Dtest=NINGUNA" "-Dsurefire.failIfNoSpecifiedTests=false" "-Dit.test=FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT,FlujoHallazgoSistemaIT"` |
+| Solo las pruebas de sistema | `./mvnw verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test='FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT,FlujoHallazgoSistemaIT' -Djacoco.skip=true` | `.\mvnw.cmd verify "-Dtest=NINGUNA" "-Dsurefire.failIfNoSpecifiedTests=false" "-Dit.test=FlujoReportePerdidaSistemaIT,FlujoVozSistemaIT,FlujoHallazgoSistemaIT" "-Djacoco.skip=true"` |
 | Interfaz (`*UIT`, necesita Chrome) | `./mvnw -q -Pui verify` | `.\mvnw.cmd -q -Pui verify` |
 | Carga (k6 instalado, app corriendo) | `k6 run perf/scripts/carga.js` | `k6 run perf/scripts/carga.js` |
 

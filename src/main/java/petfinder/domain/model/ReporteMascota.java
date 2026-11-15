@@ -24,6 +24,12 @@ public abstract class ReporteMascota {
     private final String descripcion;
     private EstadoReporte estado;
 
+    /**
+     * Huella del código de gestión (S9). Nula en los casos publicados antes
+     * del código: esos solo los cierra el administrador.
+     */
+    private String huellaCodigo;
+
     protected ReporteMascota(String id, Ubicacion ubicacion, String descripcion) {
         this(id, ubicacion, descripcion, LocalDateTime.now(), EstadoReporte.ACTIVO);
     }
@@ -62,6 +68,31 @@ public abstract class ReporteMascota {
                             + " y no puede pasar a " + destino);
         }
         this.estado = destino;
+    }
+
+    /**
+     * Fija la huella del código de gestión una sola vez: al publicar o al
+     * reconstruir desde la base. No es un setter: una segunda llamada se
+     * rechaza, porque cambiar la huella de un caso publicado le quitaría el
+     * control a quien lo publicó.
+     */
+    public void protegerConHuella(String huella) {
+        if (huella == null || huella.isBlank()) {
+            throw new IllegalArgumentException("La huella del código de gestión no puede estar vacía");
+        }
+        if (this.huellaCodigo != null) {
+            throw new OperacionNoPermitidaException("El reporte " + id + " ya tiene código de gestión");
+        }
+        this.huellaCodigo = huella;
+    }
+
+    /** Si el código recibido es el de este caso. Sin huella, ningún código lo es. */
+    public boolean admiteCodigo(String codigoRecibido) {
+        return CodigoGestion.coincide(codigoRecibido, huellaCodigo);
+    }
+
+    public String getHuellaCodigo() {
+        return huellaCodigo;
     }
 
     public boolean estaActivo() {
