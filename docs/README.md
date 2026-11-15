@@ -13,6 +13,7 @@
 | [`diseno/`](diseno/DESIGN.md) | Sistema de diseño de la interfaz: [`DESIGN.md`](diseno/DESIGN.md), [`vistas.html`](diseno/vistas.html) y el [logo](diseno/logo/) |
 | [`evidencias/`](evidencias/) | Capturas y reportes de las corridas de pruebas, y el [registro del despliegue en Render](evidencias/despliegue-render.md) |
 | [`plan-corte-3.md`](plan-corte-3.md) | Reparto, decisiones y estado de las tareas del Corte 3 |
+| [`presentacion-corte-3.md`](presentacion-corte-3.md) | Guion de la exposición final, quién dice qué y los dos PR de la demo |
 | `tareas-corte-3/` | La guía de tareas de cada integrante, con los parches ya probados (entra con el PR del plan) |
 
 La carga (SLO, escenario y resultados de k6) está fuera de esta carpeta, en [`perf/README.md`](../perf/README.md).
