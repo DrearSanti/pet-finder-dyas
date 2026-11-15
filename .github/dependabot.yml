@@ -1,0 +1,18 @@
+# Mantiene al día dependencias, imágenes base y acciones. No reemplaza al check SCA: solo abre PR,
+# y cada PR de Dependabot pasa por el pipeline y por la revisión de otra persona como cualquier otro.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  # Las acciones están fijadas por SHA; Dependabot sube el SHA y deja el comentario de versión.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
