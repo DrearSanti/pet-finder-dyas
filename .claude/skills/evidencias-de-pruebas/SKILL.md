@@ -32,7 +32,7 @@ test -f target/site/jacoco/index.html
 ## 3. UI (bono, necesita Chrome)
 
 ```bash
-./mvnw -q -Pui verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=FlujosPrincipalesUIT
+./mvnw -q -Pui verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=FlujosPrincipalesUIT -Djacoco.skip=true
 ```
 
 `target/failsafe-reports/*UIT.txt` → `<fecha>_<persona>_pruebas-ui.txt`.

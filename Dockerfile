@@ -33,6 +33,12 @@ FROM eclipse-temurin:17.0.20.1_1-jre-noble
 # Las fechas del servidor no llevan zona horaria: con la hora de Bogotá, "hace 5 min" es cierto en Colombia
 ENV TZ=America/Bogota
 
+# Qué commit y qué versión lleva la imagen. Los pasa el pipeline al construir y salen en /actuator/info,
+# para comprobar que en Render corre de verdad la versión recién desplegada.
+ARG PETFINDER_COMMIT=local
+ARG PETFINDER_VERSION=sin-version
+ENV PETFINDER_COMMIT=${PETFINDER_COMMIT} PETFINDER_VERSION=${PETFINDER_VERSION}
+
 # Usuario sin privilegios: si alguien compromete la aplicación, no es root dentro del contenedor
 RUN groupadd --system app && useradd --system --gid app --no-create-home app
 WORKDIR /app

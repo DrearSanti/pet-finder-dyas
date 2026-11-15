@@ -1,0 +1,127 @@
+name: Revertir
+
+# Vuelve a desplegar en Render una versión anterior que ya está publicada en GHCR. Se lanza a mano desde la
+# pestaña Actions ("Run workflow") con el tag de la versión (por ejemplo v2.1.0) o con el SHA completo de un
+# commit de main. No reconstruye nada: despliega la misma imagen que ya pasó el pipeline en su momento, espera
+# a que /actuator/info muestre su commit y corre la prueba de humo y la de carga corta, igual que el CD.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Tag de la versión (v2.1.0) o SHA completo del commit a desplegar'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Un despliegue a la vez en producción, sea del CD o de una reversión
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  revertir:
+    name: Revertir a una versión publicada
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: produccion
+      url: https://pet-finder-akac.onrender.com
+    env:
+      URL_APP: https://pet-finder-akac.onrender.com
+      VERSION: ${{ inputs.version }}
+      K6_VERSION: v2.2.0
+      K6_SHA256: b5a8003c86f35f5cd5ceef1490312c48e587696c94d998cefc6d7b3b4cb1597d
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Resolver la imagen y su commit
+        id: destino
+        run: |
+          if printf '%s' "$VERSION" | grep -Eq '^[0-9a-f]{40}$'; then
+            commit="$VERSION"
+          elif printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            commit="$(git rev-list -n 1 "refs/tags/$VERSION")" || { echo "No existe el tag $VERSION"; exit 1; }
+          else
+            echo "Usa un tag vX.Y.Z o el SHA completo de 40 caracteres"
+            exit 1
+          fi
+          imagen="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/pet-finder:${VERSION}"
+          # La imagen tiene que existir: las versiones anteriores al pipeline (v1.0.0, v2.0.0) no tienen
+          docker manifest inspect "$imagen" > /dev/null || { echo "No hay imagen publicada para $VERSION"; exit 1; }
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "imagen=$imagen" >> "$GITHUB_OUTPUT"
+          echo "Revertir a $imagen (commit $commit)"
+
+      - name: Pedir el despliegue a Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGEN: ${{ steps.destino.outputs.imagen }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "Falta el secreto RENDER_DEPLOY_HOOK_URL en el entorno produccion"
+            exit 1
+          fi
+          imagen_codificada="$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["IMAGEN"], safe=""))')"
+          curl -fsS -X POST "${HOOK}&imgURL=${imagen_codificada}" > /dev/null
+
+      - name: Esperar a que Render corra la versión anterior
+        env:
+          COMMIT: ${{ steps.destino.outputs.commit }}
+        run: |
+          for intento in $(seq 1 60); do
+            actual="$(curl -fsS -m 30 "$URL_APP/actuator/info" 2>/dev/null \
+              | python3 -c 'import json, sys; print(json.load(sys.stdin).get("app", {}).get("commit", ""))' 2>/dev/null || true)"
+            if [ "$actual" = "$COMMIT" ]; then
+              echo "Render ya corre $COMMIT"
+              exit 0
+            fi
+            echo "Intento $intento: responde ${actual:-nada}; espero 10 s"
+            sleep 10
+          done
+          echo "Render no llegó a correr $COMMIT en 10 minutos"
+          exit 1
+
+      - name: Prueba de humo
+        # La versión anterior arranca contra la base ya migrada: si Flyway o Hibernate no la aceptaran,
+        # la app no respondería aquí.
+        run: |
+          if [ -f scripts/humo-flujo.sh ]; then
+            sh scripts/humo-flujo.sh "$URL_APP"
+          else
+            for ruta in /actuator/health/readiness / /api/reportes; do
+              curl -fsS -o /dev/null -w "$ruta %{http_code}\n" "$URL_APP$ruta"
+            done
+          fi
+
+      - name: Instalar k6
+        run: |
+          curl -fsSL -o k6.tar.gz "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz"
+          echo "${K6_SHA256}  k6.tar.gz" | sha256sum -c -
+          tar -xzf k6.tar.gz
+          sudo mv "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+
+      - name: Prueba de carga corta (SLO)
+        run: |
+          k6 run -e BASE_URL="$URL_APP" --summary-export carga-corta.json \
+            --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99),count" \
+            perf/scripts/corta.js
+
+      - name: Publicar el resumen de k6
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: carga-corta-reversion
+          path: carga-corta.json
+          if-no-files-found: warn
+
+      - name: Resumen
+        if: success()
+        env:
+          IMAGEN: ${{ steps.destino.outputs.imagen }}
+        run: |
+          echo "### Revertido" >> "$GITHUB_STEP_SUMMARY"
+          echo "Render corre \`${IMAGEN}\`, con humo y carga corta en verde." >> "$GITHUB_STEP_SUMMARY"

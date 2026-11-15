@@ -22,6 +22,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import petfinder.application.port.entrada.GestionReportes;
+import petfinder.application.port.entrada.ReportePublicado;
 import petfinder.application.port.entrada.ProcesadorComandosVoz.AccionVoz;
 import petfinder.application.port.entrada.ProcesadorComandosVoz.ResultadoComandoVoz;
 import petfinder.application.service.InterpreteComandoVoz;
@@ -60,12 +61,13 @@ class ServicioComandosVozTest {
         // Arrange
         ReportePerdida creado = new ReportePerdida("PF-001", new Ubicacion("Chía", "Reportado por voz"),
                 "perdí un perro llamado Max en Chía", new Mascota("Max", "perro", "", "", ""), CAMILA);
-        when(gestionReportes.registrar(eq(TipoReporte.PERDIDA), any())).thenReturn(creado);
+        when(gestionReportes.publicar(eq(TipoReporte.PERDIDA), any()))
+                .thenReturn(new ReportePublicado(creado, "codigo-de-prueba"));
         ArgumentCaptor<SolicitudReporte> solicitud = ArgumentCaptor.forClass(SolicitudReporte.class);
         // Act
         ResultadoComandoVoz resultado = servicio.procesar("perdí un perro llamado Max en Chía", CAMILA);
         // Assert
-        verify(gestionReportes).registrar(eq(TipoReporte.PERDIDA), solicitud.capture());
+        verify(gestionReportes).publicar(eq(TipoReporte.PERDIDA), solicitud.capture());
         assertEquals("Max", solicitud.getValue().mascota().nombre());
         assertEquals("perro", solicitud.getValue().mascota().especie());
         assertEquals("Chía", solicitud.getValue().ubicacion().zonaOBarrio());
@@ -74,6 +76,7 @@ class ServicioComandosVozTest {
         assertEquals(CAMILA, solicitud.getValue().contacto());
         assertEquals(AccionVoz.REGISTRAR_PERDIDA, resultado.accion());
         assertEquals(List.of(creado), resultado.reportes());
+        assertEquals("codigo-de-prueba", resultado.codigoGestion(), "La voz entrega el código de gestión al publicar");
     }
 
     @Test
@@ -82,12 +85,13 @@ class ServicioComandosVozTest {
         // Arrange
         ReporteEncontrada creado = new ReporteEncontrada("PF-002", new Ubicacion("Cajicá", "Reportado por voz"),
                 "encontré una gata blanca en Cajicá", "gata blanca", CAMILA);
-        when(gestionReportes.registrar(eq(TipoReporte.ENCONTRADA), any())).thenReturn(creado);
+        when(gestionReportes.publicar(eq(TipoReporte.ENCONTRADA), any()))
+                .thenReturn(new ReportePublicado(creado, "codigo-de-prueba"));
         ArgumentCaptor<SolicitudReporte> solicitud = ArgumentCaptor.forClass(SolicitudReporte.class);
         // Act
         ResultadoComandoVoz resultado = servicio.procesar("encontré una gata blanca en Cajicá", CAMILA);
         // Assert
-        verify(gestionReportes).registrar(eq(TipoReporte.ENCONTRADA), solicitud.capture());
+        verify(gestionReportes).publicar(eq(TipoReporte.ENCONTRADA), solicitud.capture());
         assertEquals("gata blanca", solicitud.getValue().descripcionMascota());
         assertEquals("Cajicá", solicitud.getValue().ubicacion().zonaOBarrio());
         assertEquals(AccionVoz.REGISTRAR_ENCONTRADA, resultado.accion());
@@ -100,6 +104,7 @@ class ServicioComandosVozTest {
         ResultadoComandoVoz resultado = servicio.procesar("cómprame un perro", CAMILA);
         // Assert
         verify(gestionReportes, never()).registrar(any(), any());
+        verify(gestionReportes, never()).publicar(any(), any());
         verifyNoInteractions(gestionReportes);
         assertEquals(AccionVoz.NO_RECONOCIDO, resultado.accion());
         assertEquals("No entendí. Prueba con: perdí un perro llamado Max en Chía", resultado.mensaje());

@@ -157,6 +157,31 @@
                         <phase>verify</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
+                    <!-- Umbral de la rúbrica: 70 % de líneas del dominio o la construcción falla.
+                         Se mide sobre todo petfinder/domain (BUNDLE) y no por paquete: con solo unitarias,
+                         petfinder.domain.observer queda en 33 % aunque el dominio completo pase de 85 %. -->
+                    <execution>
+                        <id>umbral-dominio</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <includes>
+                                <include>petfinder/domain/**</include>
+                            </includes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.70</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <!-- Demo de consola del Corte 1: mvnw compile exec:java -->

@@ -1,0 +1,141 @@
+# Integración continua de Pet Finder: un job por etapa, y cada job es un check del pull request.
+# Los nombres de los jobs son los que Santi marca como obligatorios en el ruleset de main:
+# no los cambies sin avisarle, porque un check obligatorio que no aparece bloquea todos los PR.
+name: CI
+
+on:
+  # Todo push, en cualquier rama y en los tags de versión (v2.1.0, v3.0.0...). Sin paths-ignore:
+  # un check obligatorio que no corre deja el PR esperando para siempre.
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  # Una corrida diaria sobre main: la base de Trivy cambia sin que nadie toque el código, y así una
+  # vulnerabilidad nueva aparece antes del día de la entrega (riesgo del plan). 11:00 UTC = 6:00 en Bogotá.
+  schedule:
+    - cron: '0 11 * * *'
+  # Botón "Run workflow" para el turno de los días 14 y 15 (A14).
+  workflow_dispatch:
+
+# Solo lectura por defecto: ningún job de CI necesita escribir en el repositorio ni usa secretos.
+permissions:
+  contents: read
+
+# Una corrida nueva del mismo PR cancela la anterior; en main y en tags nunca se cancela.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Con shell: bash explícito, GitHub usa -eo pipefail: un comando que falla dentro de un tubo
+# (por ejemplo sh scripts/humo-flujo.sh ... | tee) también hace fallar el paso.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  construccion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compilar y empaquetar sin pruebas
+        run: ./mvnw -B -ntp -DskipTests package
+
+  pruebas-unitarias:
+    needs: construccion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      # El patrón positivo *Test es obligatorio: con solo '!ReglasArquitecturaTest', Surefire corre
+      # también las *IT y las *UIT. ArchUnit va en su propio check (reglas-arquitectura).
+      # jacoco:check@umbral-dominio aplica el umbral del pom (70 % de líneas de petfinder/domain).
+      - name: Unitarias y umbral de cobertura del dominio
+        run: ./mvnw -B -ntp test '-Dtest=*Test,!ReglasArquitecturaTest' jacoco:report jacoco:check@umbral-dominio
+      - name: Publicar reportes de pruebas y cobertura
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reportes-pruebas-unitarias
+          path: |
+            target/surefire-reports/
+            target/site/jacoco/
+          if-no-files-found: warn
+
+  reglas-arquitectura:
+    needs: construccion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Reglas de la arquitectura hexagonal (ArchUnit)
+        run: ./mvnw -B -ntp test -Dtest=ReglasArquitecturaTest
+      - name: Publicar reporte de ArchUnit
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reportes-reglas-arquitectura
+          path: target/surefire-reports/
+          if-no-files-found: warn
+
+  pruebas-integracion:
+    needs: construccion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      # -Dtest=NINGUNA salta las unitarias (ya tienen su check). -Djacoco.skip=true porque el umbral
+      # de cobertura se aplica en pruebas-unitarias, no aquí.
+      - name: Integración y sistema (*IT con H2 y la app por HTTP)
+        run: ./mvnw -B -ntp verify -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true
+      - name: Publicar reportes de Failsafe
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reportes-pruebas-integracion
+          path: target/failsafe-reports/
+          if-no-files-found: warn
+
+  # Corre en cada PR desde el primer día, pero pasa a obligatorio solo después de 3 corridas
+  # seguidas en verde en Actions (A11): todavía no se ha visto en Linux.
+  pruebas-ui:
+    needs: construccion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Interfaz con Selenium y Chrome sin ventana (*UIT)
+        run: ./mvnw -B -ntp verify -Pui -Dtest=NINGUNA -Dsurefire.failIfNoSpecifiedTests=false '-Dit.test=*UIT' -Djacoco.skip=true
+      - name: Publicar reportes de la interfaz
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reportes-pruebas-ui
+          path: target/failsafe-reports/
+          if-no-files-found: warn

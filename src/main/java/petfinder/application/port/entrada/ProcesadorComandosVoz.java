@@ -18,10 +18,24 @@ public interface ProcesadorComandosVoz {
     ResultadoComandoVoz procesar(String texto, Contacto contacto);
 
     /**
-     * @param reportes los reportes que tocó el comando: el creado, el
-     *                 consultado o los activos; vacío si no se entendió
+     * @param reportes      los reportes que tocó el comando: el creado, el
+     *                      consultado o los activos; vacío si no se entendió
+     * @param codigoGestion el código de gestión del caso recién publicado (S9),
+     *                      la única vez que sale; null en cualquier otro comando
      */
-    record ResultadoComandoVoz(AccionVoz accion, String mensaje, List<ReporteMascota> reportes) {
+    record ResultadoComandoVoz(AccionVoz accion, String mensaje, List<ReporteMascota> reportes,
+                               String codigoGestion) {
+
+        /** Comandos que no publican: no hay código que devolver. */
+        public ResultadoComandoVoz(AccionVoz accion, String mensaje, List<ReporteMascota> reportes) {
+            this(accion, mensaje, reportes, null);
+        }
+
+        @Override
+        public String toString() {
+            return "ResultadoComandoVoz[" + accion + ", " + mensaje + ", código "
+                    + (codigoGestion == null ? "ninguno" : "oculto") + "]";
+        }
     }
 
     enum AccionVoz { REGISTRAR_PERDIDA, REGISTRAR_ENCONTRADA, LISTAR_ACTIVOS, CONSULTAR, NO_RECONOCIDO }
