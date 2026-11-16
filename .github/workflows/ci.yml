@@ -157,3 +157,131 @@ jobs:
           name: reportes-pruebas-ui
           path: target/failsafe-reports/
           if-no-files-found: warn
+
+  imagen-y-escaneo:
+    needs: construccion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # La imagen se construye aquí y no en el computador de nadie. La caché type=gha guarda las capas
+      # entre corridas: si el pom no cambió, la capa de dependencias no se vuelve a descargar.
+      # provenance: false para no publicar metadatos de construcción que nadie usa.
+      - name: Construir la imagen (sin publicarla)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: pet-finder:local
+          provenance: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Amenaza T11: la clave de CARTO llega al arrancar (PETFINDER_CLAVE_CARTO), nunca dentro del jar.
+      - name: El jar de la imagen no trae config-local.js
+        run: |
+          contenedor=$(docker create pet-finder:local)
+          docker cp "$contenedor":/app/app.jar app.jar
+          docker rm "$contenedor" > /dev/null
+          if unzip -l app.jar | grep -q 'static/js/config-local\.js'; then
+            echo "::error::La imagen trae static/js/config-local.js; la clave de CARTO va en PETFINDER_CLAVE_CARTO."
+            exit 1
+          fi
+          echo "El jar de la imagen no contiene static/js/config-local.js."
+      # Umbral del enunciado: ninguna vulnerabilidad CRITICAL con corrección disponible.
+      - name: Escaneo de la imagen (CRITICAL con corrección detiene el pipeline)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.1
+          scan-type: image
+          image-ref: pet-finder:local
+          scanners: vuln
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      # HIGH no detiene la imagen (se explica en ADR-003), pero queda en el reporte y en seguridad.md.
+      - name: Reporte de HIGH y CRITICAL de la imagen
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.1
+          scan-type: image
+          image-ref: pet-finder:local
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          format: table
+          output: trivy-imagen.txt
+      - name: Publicar reporte de la imagen
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reporte-imagen
+          path: trivy-imagen.txt
+          if-no-files-found: warn
+      # El job siguiente prueba exactamente la imagen que se acaba de escanear.
+      - name: Guardar la imagen para despliegue-y-verificacion
+        run: docker save pet-finder:local | gzip > pet-finder-imagen.tar.gz
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: imagen-pet-finder
+          path: pet-finder-imagen.tar.gz
+          retention-days: 1
+          compression-level: 0
+
+  # Etapa "Despliegue y verificación" dentro del PR: la imagen escaneada corre con PostgreSQL en
+  # Compose, se le pasa la prueba de humo y la carga corta con el SLO. Es lo único automático que toca
+  # PostgreSQL. El despliegue real a Render lo hace cd.yml (Mateo) después de fusionar a main.
+  despliegue-y-verificacion:
+    needs: [pruebas-unitarias, reglas-arquitectura, pruebas-integracion, imagen-y-escaneo]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Misma instalación de k6 que carga-larga.yml (M4): tarball oficial con SHA-256 validado,
+    # sin una acción de terceros más.
+    env:
+      K6_VERSION: v2.2.0
+      K6_SHA256: b5a8003c86f35f5cd5ceef1490312c48e587696c94d998cefc6d7b3b4cb1597d
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: imagen-pet-finder
+      - name: Cargar la imagen escaneada
+        run: gunzip -c pet-finder-imagen.tar.gz | docker load
+      # .env sale de .env.example, como lo haría alguien que clona el repositorio.
+      - name: Levantar Compose con la imagen y PostgreSQL
+        run: |
+          cp .env.example .env
+          docker compose up -d --no-build --wait --wait-timeout 180
+          docker compose ps
+      - name: Prueba de humo del flujo principal
+        run: sh scripts/humo-flujo.sh http://localhost:8080 | tee humo-flujo.txt
+      - name: Instalar k6
+        run: |
+          curl -fsSL -o k6.tar.gz "https://github.com/grafana/k6/releases/download/${K6_VERSION}/k6-${K6_VERSION}-linux-amd64.tar.gz"
+          echo "${K6_SHA256}  k6.tar.gz" | sha256sum -c -
+          tar -xzf k6.tar.gz
+          sudo mv "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
+          k6 version
+      # Los umbrales del SLO viven en el script: si no se cumplen, k6 sale distinto de 0.
+      - name: Prueba de carga corta con el SLO
+        env:
+          BASE_URL: http://localhost:8080
+        run: k6 run --summary-export=k6-resumen.json perf/scripts/corta.js
+      - name: Logs de Compose
+        if: always()
+        run: docker compose logs --no-color > compose.log 2>&1 || true
+      - name: Publicar reportes de humo, carga y logs
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: reportes-despliegue-y-verificacion
+          path: |
+            humo-flujo.txt
+            k6-resumen.json
+            compose.log
+          if-no-files-found: warn
+      - name: Bajar Compose y borrar el volumen
+        if: always()
+        run: docker compose down -v
