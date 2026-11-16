@@ -4,7 +4,7 @@
 # corre el .jar con el JRE, así la imagen final no arrastra Maven, el JDK ni el código fuente.
 
 # ---------- Etapa 1: compilar el .jar con Maven (las pruebas corren antes, en el pipeline) ----------
-FROM maven:3.9.16-eclipse-temurin-17-noble AS build
+FROM maven:3.9-eclipse-temurin-26-noble AS build
 WORKDIR /src
 
 # Primero solo el pom: las dependencias quedan en una capa propia que se reutiliza mientras el pom
