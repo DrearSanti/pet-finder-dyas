@@ -104,7 +104,11 @@ jobs:
           tar -xzf k6.tar.gz
           sudo mv "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
 
+      # Misma tasa que el CD contra Render gratis: 6 req/s durante 330 s, umbrales sin cambios (ADR-004).
       - name: Prueba de carga corta (SLO)
+        env:
+          ITERACIONES_POR_SEGUNDO: '2'
+          MEDICION: 330s
         run: |
           k6 run -e BASE_URL="$URL_APP" --summary-export carga-corta.json \
             --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99),count" \

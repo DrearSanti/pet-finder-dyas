@@ -10,6 +10,10 @@ import { check } from 'k6';
 // throughput e iteraciones perdidas; el resultado no depende de cuántos usuarios virtuales se elijan.
 //
 // Cada caso que crea lo cierra al final del ciclo, para no dejar reportes de prueba en el mapa.
+//
+// Los valores por defecto (11 iteraciones por segundo durante 60 s) son los que corre
+// despliegue-y-verificacion en cada PR. Contra Render gratis, cd.yml y revertir.yml bajan la tasa con
+// ITERACIONES_POR_SEGUNDO y alargan MEDICION para juntar igual 1800 peticiones; los umbrales no cambian.
 const BASE = __ENV.BASE_URL || 'http://localhost:8080';
 const CABECERAS = { 'Content-Type': 'application/json' };
 const TASA = Number(__ENV.ITERACIONES_POR_SEGUNDO || 11);
@@ -31,7 +35,7 @@ export const options = {
   thresholds: {
     'http_req_duration{scenario:medicion}': ['p(95)<500'],
     'http_req_failed{scenario:medicion}': ['rate<0.01'],
-    // 30 req/s del SLO durante los 60 s de medición
+    // 30 req/s del SLO durante los 60 s de medición; con una tasa menor, MEDICION se alarga hasta juntarlas
     'http_reqs{scenario:medicion}': ['count>=1800'],
     // Por operación, como en carga.js: sin esto el resumen no separa las latencias
     'http_req_duration{scenario:medicion,name:voz_registrar}': ['p(95)<500'],
