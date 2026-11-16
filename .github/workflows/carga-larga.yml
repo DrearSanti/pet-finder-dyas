@@ -29,6 +29,9 @@ jobs:
           clave="$(openssl rand -hex 16)"
           echo "::add-mask::$clave"
           printf 'POSTGRES_USER=petfinder\nPOSTGRES_PASSWORD=%s\n' "$clave" > .env
+          # carga.js manda casi 4700 peticiones por minuto a /api/voz desde una sola IP: por encima del
+          # límite por omisión de 3000 (S10). Aquí se mide la app, no el límite.
+          printf 'PETFINDER_LIMITE_VOZ_IP=100000\nPETFINDER_LIMITE_REPORTES_IP=100000\n' >> .env
 
       - name: Levantar la app y la base
         run: docker compose up -d --build
