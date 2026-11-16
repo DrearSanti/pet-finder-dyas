@@ -124,7 +124,7 @@ Para revertir también el código (no solo lo desplegado): `git revert <sha-del-
 
 ## 8. Pruebas en rojo
 
-Cada control se probó en rojo en una rama desechable que nunca se integró y se borró después. Las corridas siguen en Actions. **[Pendiente (A8): la corrida en rojo de `acciones-fijadas`.]**
+Cada control se probó en rojo en una rama desechable que nunca se integró y se borró después. Las corridas siguen en Actions.
 
 | Control | Rama desechable | Qué se cambió | Resultado esperado | Enlace |
 |---|---|---|---|---|
@@ -132,4 +132,5 @@ Cada control se probó en rojo en una rama desechable que nunca se integró y se
 | SCA | `prueba/sca-rojo` | `org.apache.commons:commons-text:1.9` (CVE-2022-42889, crítica) en `pom.xml` | `SCA` en rojo: `Total: 1 (HIGH: 0, CRITICAL: 1)`, `org.apache.commons:commons-text` CVE-2022-42889, corregida en 1.10.0 | https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43800039341 |
 | Imagen | `prueba/imagen-rojo` | La misma dependencia | `imagen-y-escaneo` en rojo en el paso de Trivy: CVE-2022-42889 dentro de `app.jar` (`Total: 1 (CRITICAL: 1)`) | https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43800064151 |
 | Configuración en la imagen | `prueba/config-local` | `config-local.js` forzado dentro del jar | `imagen-y-escaneo` en rojo en el paso "El jar de la imagen no trae config-local.js": `La imagen trae static/js/config-local.js; la clave de CARTO va en PETFINDER_CLAVE_CARTO.` | https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43800109671 |
+| Acciones fijadas | `prueba/acciones-fijadas` | `uses: actions/checkout@v5` (por tag) en `carga-larga.yml` | `acciones-fijadas` en rojo: `Acciones sin SHA de 40 caracteres: .github/workflows/carga-larga.yml:24: uses: actions/checkout@v5` | https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43801069079 |
 | SAST | `prueba/sast` (PR #42, cerrado sin integrar) | Un controlador vulnerable a propósito | `SAST (java-kotlin)` en rojo | https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43050165768 |
