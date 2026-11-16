@@ -2,7 +2,7 @@
 
 Modelo de amenazas, controles del pipeline con su umbral y registro de cada hallazgo con su decisión. Parte del borrador del Apéndice A de [`plan-corte-3.md`](plan-corte-3.md), que salió de la auditoría del 4 de noviembre de 2026, y lo lleva a la mitigación y la verificación finales.
 
-**Estado de este documento (16 de noviembre de 2026).** Lo que ya está en `main` aparece como verificado, con la prueba o el check que lo comprueba. Lo que depende de un PR abierto dice cuál: el escaneo de la imagen (A6, #74), el límite de peticiones (S10, #47) y el código de gestión en los controladores web (A9).
+**Estado de este documento (16 de noviembre de 2026).** Lo que ya está en `main` aparece como verificado, con la prueba o el check que lo comprueba. Lo que depende de un PR abierto dice cuál: el escaneo de la imagen (A6, #74) y el código de gestión en los controladores web (A9).
 
 ## 1. Modelo de amenazas
 
@@ -28,7 +28,7 @@ Sobre el diagrama de contenedores del Corte 2 ([`diagramas/c4.md`](diagramas/c4.
 |---|---|---|---|---|
 | Secretos | Gitleaks 8.30.1, binario validado con su SHA-256 | **Cero secretos**, en todo el historial (`fetch-depth: 0`) | `seguridad.yml`, check **Secretos** | `reporte-secretos` (SARIF, con valores ocultos por `--redact`) |
 | SAST | CodeQL v4.39.2 (`security-extended`), Java y JavaScript | **Ningún hallazgo con `security-severity` de 7,0 o más sin tratar**: lo aplica `scripts/umbral-sarif.py`, porque CodeQL solo reporta | `seguridad.yml`, checks **SAST (java-kotlin)** y **SAST (javascript-typescript)** | `sarif-java-kotlin` y `sarif-javascript-typescript`; resultados en la pestaña Security |
-| SCA | Trivy v0.76.1 (`scan-type: fs`) | **HIGH o CRITICAL con corrección disponible** (`ignore-unfixed: true`, `exit-code: '1'`) | `seguridad.yml`, check **SCA** | `reporte-sca` |
+| SCA | Trivy v0.76.1 (`scan-type: fs`) en modo offline (`TRIVY_OFFLINE_SCAN`): resuelve las dependencias con `pom.xml` y la caché local de Maven, sin pedirle nada a Maven Central; la base de vulnerabilidades sí se descarga | **HIGH o CRITICAL con corrección disponible** (`ignore-unfixed: true`, `exit-code: '1'`) | `seguridad.yml`, check **SCA** | `reporte-sca` |
 | Imagen | Trivy v0.76.1 sobre la imagen construida en el pipeline | **CRITICAL con corrección disponible**; los HIGH se reportan sin detener | `ci.yml`, check **imagen-y-escaneo** (A6, [#74](https://github.com/DrearSanti/pet-finder-dyas/pull/74)) | `trivy-imagen.txt` |
 
 Las herramientas, los umbrales y por qué se eligieron están en [ADR-003](adr/ADR-003-seguridad-del-pipeline.md). Los controles de `seguridad.yml` corren en cada push, en cada PR a `main` y una vez al día (11:00 UTC), porque la base de vulnerabilidades cambia aunque nadie toque el código.
@@ -45,9 +45,9 @@ Cada hallazgo tiene una de tres decisiones: **Corregido** (con el commit), **Fal
 | H-04 | Auditoría manual | La consola de H2 respondía 200 en Render | Alta | **Corregido** en `e9f3ce9` (M2, PR #36) |
 | H-05 | Auditoría manual | La página no tenía CSP, HSTS ni SRI | Media | **Corregido** en `818096b` (M9, PR #38) |
 | H-06 | Auditoría manual | Cualquiera cerraba el caso de otra familia (T1) | Alta | Núcleo **corregido** en S9 ([#48](https://github.com/DrearSanti/pet-finder-dyas/pull/48)); la API web sigue sin pedir el código hasta A9 |
-| H-07 | Auditoría manual | 3000 turnos seguidos al asistente sin ningún 429 (T7) | Alta | En curso: S10 ([#47](https://github.com/DrearSanti/pet-finder-dyas/pull/47)) |
+| H-07 | Auditoría manual | 3000 turnos seguidos al asistente sin ningún 429 (T7) | Alta | **Corregido** en S10 ([#47](https://github.com/DrearSanti/pet-finder-dyas/pull/47)): 10 turnos por minuto por IP y 60 en total; el 11 responde 429 |
 | H-08 | Auditoría manual | Reiniciar el contenedor borraba los casos (T10) | Alta | **Corregido** en S7 ([#43](https://github.com/DrearSanti/pet-finder-dyas/pull/43)) |
-| H-09 | Actions (SCA) | El check SCA salía en rojo por un 429 de Maven Central, sin ninguna vulnerabilidad | — | **Falso positivo** del entorno, no del código: A5 descarga las dependencias antes de escanear ([#73](https://github.com/DrearSanti/pet-finder-dyas/pull/73)) |
+| H-09 | Actions (SCA) | El check SCA salía en rojo por un 429 de Maven Central, sin ninguna vulnerabilidad | — | **Falso positivo** del entorno, no del código. Descargar las dependencias antes de escanear ([#56](https://github.com/DrearSanti/pet-finder-dyas/pull/56)) no alcanzó: Trivy seguía pidiendo a Maven Central poms que Maven no usa. Lo corrigió el modo offline de Trivy (`TRIVY_OFFLINE_SCAN`, [#73](https://github.com/DrearSanti/pet-finder-dyas/pull/73)), que encuentra los mismos 115 paquetes sin consultar Maven Central |
 
 **Pestaña Security y Actions (16 de noviembre de 2026):** 0 alertas de code scanning, 0 de Dependabot y 0 de secret scanning. No hay excepciones: `.github/codeql/excepciones.txt` está vacío y no existen `.gitleaksignore` ni `.gitleaks.toml`.
 
