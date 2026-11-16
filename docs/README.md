@@ -13,6 +13,7 @@
 | [`devops.md`](devops.md) | El pipeline de CI/CD: diagrama, qué hace cada etapa, qué umbral la detiene y por qué, las pruebas en rojo de cada control y cómo se revierte una versión |
 | [`diseno/`](diseno/DESIGN.md) | Sistema de diseño de la interfaz: [`DESIGN.md`](diseno/DESIGN.md), [`vistas.html`](diseno/vistas.html) y el [logo](diseno/logo/) |
 | [`evidencias/`](evidencias/) | Capturas y reportes de las corridas de pruebas, y el [registro del despliegue en Render](evidencias/despliegue-render.md) |
+| [`implementacion.md`](implementacion.md) | Guía de implementación: requisitos, costos, configuración, instalación paso a paso en Render, verificación, operación (versiones, reversión, copias de seguridad) y solución de problemas |
 | [`plan-corte-3.md`](plan-corte-3.md) | Reparto, decisiones y estado de las tareas del Corte 3 |
 | `tareas-corte-3/` | La guía de tareas de cada integrante, con los parches ya probados (entra con el PR del plan) |
 
@@ -26,7 +27,6 @@ Se agregan a medida que entran las tareas del [plan](plan-corte-3.md):
 |---|---|---|
 | `seguridad.md` | Modelo de amenazas, controles, umbrales y registro de hallazgos | S11 |
 | `evolucion.md` | El recorrido de los tres cortes y cómo se resolvió cada pendiente | S14 |
-| `implementacion.md` | La guía para que una organización instale y opere Pet Finder por su cuenta | A13 |
 | `adr/ADR-003` y `adr/ADR-004` | Estrategia de seguridad del pipeline y estrategia de despliegue | S13, M12 |
 
 ## Historia
