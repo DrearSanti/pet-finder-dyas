@@ -5,7 +5,7 @@ name: pet-finder
 services:
   app:
     build: .
-    image: proyecto:dev
+    image: pet-finder:local
     ports:
       - "8080:8080"
     environment:
@@ -24,9 +24,22 @@ services:
       PETFINDER_IA_TOPE_DIARIO: ${PETFINDER_IA_TOPE_DIARIO:-200}
       # Código de administrador (S9): vacío = sin administrador; si se define, 20 caracteres o más
       PETFINDER_CODIGO_ADMIN: ${PETFINDER_CODIGO_ADMIN:-}
+      # Límite de peticiones por minuto (S10)
+      PETFINDER_LIMITE_ASISTENTE_IP: ${PETFINDER_LIMITE_ASISTENTE_IP:-10}
+      PETFINDER_LIMITE_ASISTENTE_GLOBAL: ${PETFINDER_LIMITE_ASISTENTE_GLOBAL:-60}
+      PETFINDER_LIMITE_VOZ_IP: ${PETFINDER_LIMITE_VOZ_IP:-3000}
+      PETFINDER_LIMITE_REPORTES_IP: ${PETFINDER_LIMITE_REPORTES_IP:-3000}
     depends_on:
       db:
         condition: service_healthy
+    # Mismo endpoint que el HEALTHCHECK del Dockerfile, escrito aquí para que se vea qué espera
+    # docker compose up --wait (Spring Boot listo, no solo el contenedor arrancado) sin abrir la imagen.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 3s
+      start_period: 60s
+      retries: 5
     restart: unless-stopped
 
   db:
