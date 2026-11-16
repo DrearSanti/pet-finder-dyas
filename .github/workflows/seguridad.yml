@@ -108,8 +108,13 @@ jobs:
         run: ./mvnw -B -ntp -q dependency:resolve
       # Umbral del enunciado: ninguna vulnerabilidad HIGH o CRITICAL con corrección disponible.
       # Trivy lee pom.xml y resuelve las dependencias transitivas; exit-code 1 detiene el pipeline.
+      # TRIVY_OFFLINE_SCAN: Trivy resuelve con el pom y ~/.m2 y no le pide nada a Maven Central. Aun con la
+      # caché llena seguía pidiendo poms que Maven no usa y recibía 429. Comparado en local con 0.76.1:
+      # online y offline encuentran los mismos 115 paquetes. La base de vulnerabilidades sí se descarga.
       - name: SCA de dependencias (HIGH y CRITICAL con corrección detienen el pipeline)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_OFFLINE_SCAN: 'true'
         with:
           version: v0.76.1
           scan-type: fs

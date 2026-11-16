@@ -3,13 +3,15 @@
 # Pet Finder en un contenedor, en dos etapas: la primera compila con Maven y la segunda solo
 # corre el .jar con el JRE, así la imagen final no arrastra Maven, el JDK ni el código fuente.
 
-# ---------- Etapa 1: compilar el .jar con Maven (las pruebas ya corrieron con ./mvnw verify) ----------
+# ---------- Etapa 1: compilar el .jar con Maven (las pruebas corren antes, en el pipeline) ----------
 FROM maven:3.9.16-eclipse-temurin-17-noble AS build
 WORKDIR /src
 
-# Primero solo el pom: las dependencias quedan en una capa que se reutiliza mientras el pom no cambie
+# Primero solo el pom: las dependencias quedan en una capa propia que se reutiliza mientras el pom
+# no cambie. Sin --mount=type=cache: esa caché vive solo en la máquina que construye y no viaja en
+# la caché type=gha de GitHub Actions; una capa normal sí.
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -q dependency:go-offline
+RUN mvn -B -ntp -q dependency:go-offline
 
 # Después el código
 COPY src ./src
@@ -24,7 +26,7 @@ RUN if [ -n "$PETFINDER_CLAVE_CARTO" ]; then \
         > src/main/resources/static/js/config-local.js; \
     fi
 
-RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -q package -DskipTests \
+RUN mvn -B -ntp -q package -DskipTests \
  && cp target/pet-finder.jar /app.jar
 
 # ---------- Etapa 2: imagen final solo con el JRE y el .jar ----------
