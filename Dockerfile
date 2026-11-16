@@ -16,16 +16,6 @@ RUN mvn -B -ntp -q dependency:go-offline
 # Después el código
 COPY src ./src
 
-# Clave gratuita de CARTO para las teselas del mapa (opcional). Se pasa al construir:
-#   docker build --build-arg PETFINDER_CLAVE_CARTO=tu-clave .
-# En Render, con una variable de entorno del mismo nombre. Es una clave pública por diseño (viaja en cada
-# petición de teselas del navegador) y nunca se guarda en el repositorio. Sin ella el mapa usa OpenStreetMap.
-ARG PETFINDER_CLAVE_CARTO=""
-RUN if [ -n "$PETFINDER_CLAVE_CARTO" ]; then \
-      printf "window.PETFINDER_CLAVE_CARTO = '%s';\n" "$(printf %s "$PETFINDER_CLAVE_CARTO" | tr -cd 'A-Za-z0-9_-')" \
-        > src/main/resources/static/js/config-local.js; \
-    fi
-
 RUN mvn -B -ntp -q package -DskipTests \
  && cp target/pet-finder.jar /app.jar
 
