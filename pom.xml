@@ -43,6 +43,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- PR de evidencia S12: dependencia vulnerable a propósito (CVE-2022-42889). Nunca se fusiona. -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.9</version>
+        </dependency>
         <!-- Adaptadores de entrada: API REST y página estática -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

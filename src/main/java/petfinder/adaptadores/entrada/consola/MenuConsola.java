@@ -31,6 +31,9 @@ public class MenuConsola {
     private final RegistroAvistamientos servicioAvistamientos;
     private final Scanner entrada = new Scanner(System.in);
 
+    /** PR de evidencia S4/S12: la consola usa el servicio en vez del puerto. Viola lasEntradasSoloHablanConPuertos. Nunca se fusiona. */
+    private final petfinder.application.service.ServicioReportes violacionArquitectura = null;
+
     /** Consecutivo local de avistamientos; los reportes los numera el dominio. */
     private int consecutivoAvistamiento = 0;
 
