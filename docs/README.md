@@ -10,6 +10,7 @@
 | [`adr/`](adr/) | Decisiones de arquitectura: [ADR-001](adr/ADR-001-estilo-arquitectonico.md) (por qué hexagonal) y [ADR-002](adr/ADR-002-extraccion-de-intencion.md) (Claude con respaldo de reglas) |
 | [`diagramas/c4.md`](diagramas/c4.md) | Diagramas C4 de contexto, contenedores y componentes |
 | [`pruebas.md`](pruebas.md) | Estrategia de pruebas por nivel, matriz de casos y hallazgos |
+| [`devops.md`](devops.md) | El pipeline de CI/CD: diagrama, qué hace cada etapa, qué umbral la detiene y por qué, las pruebas en rojo de cada control y cómo se revierte una versión |
 | [`diseno/`](diseno/DESIGN.md) | Sistema de diseño de la interfaz: [`DESIGN.md`](diseno/DESIGN.md), [`vistas.html`](diseno/vistas.html) y el [logo](diseno/logo/) |
 | [`evidencias/`](evidencias/) | Capturas y reportes de las corridas de pruebas, y el [registro del despliegue en Render](evidencias/despliegue-render.md) |
 | [`implementacion.md`](implementacion.md) | Guía de implementación: requisitos, costos, configuración, instalación paso a paso en Render, verificación, operación (versiones, reversión, copias de seguridad) y solución de problemas |
@@ -24,7 +25,6 @@ Se agregan a medida que entran las tareas del [plan](plan-corte-3.md):
 
 | Documento | Qué va a contener | Tarea |
 |---|---|---|
-| `devops.md` | El pipeline, qué hace cada etapa, qué umbral la detiene y cómo se revierte una versión | A12 |
 | `seguridad.md` | Modelo de amenazas, controles, umbrales y registro de hallazgos | S11 |
 | `evolucion.md` | El recorrido de los tres cortes y cómo se resolvió cada pendiente | S14 |
 | `adr/ADR-003` y `adr/ADR-004` | Estrategia de seguridad del pipeline y estrategia de despliegue | S13, M12 |
