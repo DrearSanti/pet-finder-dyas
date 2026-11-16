@@ -153,7 +153,14 @@ jobs:
           tar -xzf k6.tar.gz
           sudo mv "k6-${K6_VERSION}-linux-amd64/k6" /usr/local/bin/k6
 
+      # Contra Render gratis (0,1 CPU) se mide el SLO de latencia y errores a una tasa que el plan aguanta:
+      # 2 iteraciones por segundo (6 req/s) durante 330 s, para juntar igual al menos 1800 peticiones.
+      # Los umbrales de corta.js no cambian. La capacidad de 30 req/s la exige despliegue-y-verificacion
+      # en cada PR con la misma imagen. Lo explica la revisión del 2026-11-16 en ADR-004.
       - name: Prueba de carga corta contra la URL desplegada (SLO)
+        env:
+          ITERACIONES_POR_SEGUNDO: '2'
+          MEDICION: 330s
         run: |
           k6 run -e BASE_URL="$URL_APP" --summary-export carga-corta.json \
             --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99),count" \
