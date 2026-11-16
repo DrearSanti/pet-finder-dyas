@@ -34,6 +34,24 @@ defaults:
     shell: bash
 
 jobs:
+  # Amenaza T11: una acción referenciada por tag puede cambiar por debajo; por SHA, no.
+  # Sin needs: corre en paralelo con todo lo demás.
+  acciones-fijadas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Toda acción externa va fijada por un SHA de 40 caracteres
+        run: |
+          malas=$(grep -RnE '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*[^.[:space:]]' .github/workflows \
+            | grep -vE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}([[:space:]]|$)' || true)
+          if [ -n "$malas" ]; then
+            echo "::error::Acciones sin SHA de 40 caracteres:"
+            echo "$malas"
+            exit 1
+          fi
+          echo "Todas las acciones externas están fijadas por SHA."
+
   construccion:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
