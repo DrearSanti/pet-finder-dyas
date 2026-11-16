@@ -20,7 +20,7 @@ RUN mvn -B -ntp -q package -DskipTests \
  && cp target/pet-finder.jar /app.jar
 
 # ---------- Etapa 2: imagen final solo con el JRE y el .jar ----------
-FROM eclipse-temurin:17.0.20.1_1-jre-noble
+FROM eclipse-temurin:24.0.2_12-jre-noble
 
 # Las fechas del servidor no llevan zona horaria: con la hora de Bogotá, "hace 5 min" es cierto en Colombia
 ENV TZ=America/Bogota
