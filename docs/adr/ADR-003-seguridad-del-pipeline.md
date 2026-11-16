@@ -36,7 +36,7 @@ Cuatro controles en GitHub Actions, cada uno con su check en el PR y su umbral *
 |---|---|---|---|
 | Secretos | Gitleaks 8.30.1, binario validado con su SHA-256 | **Cero secretos**, en todo el historial (`fetch-depth: 0`, `--exit-code 1`) | `seguridad.yml`, **Secretos** |
 | SAST | CodeQL v4.39.2, `security-extended`, Java y JavaScript | **Ningún hallazgo con `security-severity` de 7.0 o más sin tratar**: CodeQL solo reporta, así que `scripts/umbral-sarif.py` lee el SARIF y falla (`umbral-sarif.py sarif-results 7.0`) | `seguridad.yml`, **SAST (java-kotlin)** y **SAST (javascript-typescript)** |
-| SCA | Trivy v0.76.1 (`scan-type: fs`) | **HIGH o CRITICAL con corrección disponible** (`severity: HIGH,CRITICAL`, `ignore-unfixed: true`, `exit-code: '1'`) | `seguridad.yml`, **SCA** |
+| SCA | Trivy v0.76.1 (`scan-type: fs`, modo offline con `TRIVY_OFFLINE_SCAN`) | **HIGH o CRITICAL con corrección disponible** (`severity: HIGH,CRITICAL`, `ignore-unfixed: true`, `exit-code: '1'`) | `seguridad.yml`, **SCA** |
 | Imagen | Trivy v0.76.1 sobre la imagen construida en el pipeline | **CRITICAL con corrección disponible** (`severity: CRITICAL`, `ignore-unfixed: true`, `exit-code: '1'`); un segundo paso reporta también los HIGH sin detener (`exit-code: '0'`) | `ci.yml`, **imagen-y-escaneo** |
 
 Además:
@@ -62,7 +62,7 @@ Son los mínimos del enunciado para cada control, y la diferencia tiene una raz�
 ## Consecuencias negativas
 
 - **CodeQL es el job más lento** (unos 2,5 minutos en Java). Corre en paralelo con el CI, así que no alarga la espera del PR más allá del job más lento.
-- **El SCA consulta Maven Central y la base de Trivy en cada corrida.** Un 429 de Maven Central llegó a poner SCA en rojo sin que hubiera vulnerabilidades; A5 lo corrigió descargando las dependencias primero (#73).
+- **El SCA dependía de Maven Central.** Un 429 de Maven Central llegó a poner SCA en rojo sin que hubiera vulnerabilidades. Descargar antes las dependencias (#56) no alcanzó, porque Trivy seguía pidiendo poms que Maven no usa; lo corrigió el modo offline de Trivy (`TRIVY_OFFLINE_SCAN`, #73), que resuelve con `pom.xml` y la caché local y encuentra los mismos 115 paquetes. La base de vulnerabilidades sí se sigue descargando en cada corrida.
 - **Gitleaks sin verificación activa** no sabe si una llave sigue viva: trata igual una llave real y una de ejemplo. Los valores de ejemplo se registran como falso positivo.
 - **Quien pierde el código de gestión depende del administrador** para cerrar su caso.
 - **Los HIGH del sistema base de la imagen no bloquean**: quedan en el reporte `trivy-imagen.txt` y se revisan a mano.
