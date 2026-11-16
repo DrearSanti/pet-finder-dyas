@@ -5,6 +5,7 @@
 | **Estado** | Aceptada |
 | **Fecha de registro** | 2026-11-11 (la decisión es la D2 del [plan del Corte 3](../plan-corte-3.md), tomada el 2026-11-07) |
 | **Decide** | Equipo Pet Finder (Santiago Escobar, Antonio Benítez, Mateo Ramírez) |
+| **Revisada** | 2026-11-16: el servicio se queda en el plan gratis y la carga corta del CD cambia de tasa (ver [Revisión del 2026-11-16](#revisión-del-2026-11-16-se-queda-el-plan-gratis)) |
 | **Reemplaza** | El despliegue del Corte 2: Render construía la imagen desde el repositorio en cada push, con H2 en memoria |
 
 ## Contexto
@@ -44,7 +45,7 @@ La base se conecta con `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `
 
 **Reversión.** Volver a una versión anterior es pedirle a Render la imagen de su SHA o de su tag con el mismo deploy hook, y esperar a que `/actuator/info` la muestre. Se hace desde GitHub Actions para que quede registrada (tarea M8).
 
-**Plan de Render.** Se empieza en el plan gratis. Si la carga corta falla dos de tres veces por falta de CPU, se pasa el servicio al plan Starter (7 USD al mes, 0,5 CPU, cobro por segundo), según la decisión D2.
+**Plan de Render.** Se empieza en el plan gratis. Si la carga corta falla dos de tres veces por falta de CPU, se pasa el servicio al plan Starter (7 USD al mes, 0,5 CPU, cobro por segundo), según la decisión D2. Esa salida se descartó el 2026-11-16; la decisión que la reemplaza está al final.
 
 ## Consecuencias positivas
 
@@ -66,6 +67,25 @@ La base se conecta con `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `
 
 ## Cuándo se revisaría
 
-- Si la carga corta falla dos de tres veces en el plan gratis: pasar a Starter.
+- Si la carga corta a 6 peticiones por segundo también falla contra Render gratis, o si el sistema necesita atender más de esa tasa en producción: pasar a Starter, como preveía la D2.
 - Si el sistema lo adopta una organización real: plan pagado de Render para la aplicación y la base, copias de seguridad programadas y un dominio propio. Lo detalla `docs/implementacion.md`.
 - Si se necesita más de una instancia o un segundo entorno de pruebas: un entorno `pruebas` en GitHub con su propio servicio en Render, y promoción a `produccion` con aprobación manual.
+
+## Revisión del 2026-11-16: se queda el plan gratis
+
+**Qué pasó.** La carga corta falló contra Render gratis en tres corridas seguidas del CD, todas por capacidad y no por el código. La más reciente (https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43908411497) no tuvo ni un error, pero Render solo alcanzó unas 16 peticiones por segundo frente a las 33 que pide la prueba: p95 de 9,55 s, 975 peticiones de 1800 y 336 iteraciones perdidas. La misma imagen en Compose, en el runner de GitHub, da p95 de 11 ms y 0 % de errores. Además, las corridas que fallaban dejaban casos de prueba abiertos en producción: una noche quedaron 318 que hubo que cerrar a mano.
+
+**Decisión.** El equipo no pasa el servicio a Starter. El SLO del Corte 2 se sigue exigiendo completo, pero repartido entre dos etapas que miden cosas distintas:
+
+| Qué se mide | Dónde | Cómo |
+|---|---|---|
+| **Capacidad:** 30 peticiones por segundo con p95 menor a 500 ms y menos de 1 % de errores | `despliegue-y-verificacion` en `ci.yml`, en cada PR, obligatorio para integrar | `corta.js` con sus valores por defecto (11 iteraciones por segundo, 60 s) contra la misma imagen con PostgreSQL en Compose |
+| **Latencia y errores en la plataforma real:** p95 menor a 500 ms, menos de 1 % de errores, al menos 1800 peticiones y ninguna iteración perdida | `Desplegar en Render y verificar` en `cd.yml`, y `revertir.yml` | `corta.js` a 2 iteraciones por segundo (6 peticiones por segundo) durante 330 s, contra la URL pública |
+
+Los umbrales de `corta.js` no cambiaron: lo único que cambia en el CD es la tasa de llegada y la duración, con las variables `ITERACIONES_POR_SEGUNDO` y `MEDICION`. La tasa sale de la corrida fallida: 6 peticiones por segundo es más o menos un tercio de lo que Render gratis alcanzó saturado, para que la cola no crezca y la latencia mida el servicio y no la espera.
+
+**Consecuencias.**
+
+- El CD vuelve a decir algo útil: si queda en rojo, es que la versión nueva empeoró la latencia o los errores, no que el plan se quedó corto.
+- La capacidad de 30 peticiones por segundo queda demostrada para la imagen, no para Render gratis. Quien adopte el sistema y espere esa carga necesita un plan pagado; lo dice la guía de implementación.
+- La carga del CD dura unos 6 minutos en vez de un minuto y medio, y crea unos 660 casos que cierra al terminar, en vez de casi 2000.
