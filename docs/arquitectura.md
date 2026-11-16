@@ -5,6 +5,8 @@ Equipo: Santiago Escobar, Antonio Benítez, Mateo Ramírez
 
 Cada número de este documento sale de un reporte del repositorio: Surefire y Failsafe (`target/surefire-reports/`, `target/failsafe-reports/`), JaCoCo (`target/site/jacoco/`) y k6 (`perf/resultados/`). Los de pruebas y cobertura son de `./mvnw clean -Pui verify` corrido el 2026-09-27 sobre `main` (commit `bd67f12`). Lo que no se midió o no se logró se dice en la sección 7.
 
+Desde el Corte 3, la [sección 8](#8-vista-de-despliegue-corte-3) muestra dónde corre cada parte del sistema desplegado y cómo llega cada versión ahí ([ADR-004](adr/ADR-004-estrategia-de-despliegue.md)). Los límites de la sección 7 son los del cierre del Corte 2; cómo se resolvió cada uno queda en `docs/evolucion.md`.
+
 ## 1. Descripción del sistema y resumen de lo entregado en el primer corte
 
 **Pet Finder** conecta a quien perdió una mascota con quien la vio o la encontró. Una familia publica la pérdida; un vecino ve los casos cercanos y reporta dónde vio al animal; el propietario recibe la pista.
@@ -153,3 +155,56 @@ SLO fijado antes de correr (commit de E3-T1): p95 ≤ 500 ms, errores < 1 %, al 
 4. **Cuentas y permisos** para que solo quien publicó pueda resolver o cerrar su caso.
 5. **Fotos** de referencia y de avistamiento con almacenamiento externo, después de las cuentas.
 6. Cubrir con Selenium **"Cerca de ti" y las posibles coincidencias**, o retirarlas si no se pueden probar.
+
+## 8. Vista de despliegue (Corte 3)
+
+Dónde corre cada contenedor y cómo se comunican, tal como lo despliega el workflow `CD` (`.github/workflows/cd.yml`). Por qué se eligió así, y qué se descartó, está en el [ADR-004](adr/ADR-004-estrategia-de-despliegue.md).
+
+```mermaid
+C4Deployment
+    title Pet Finder: vista de despliegue (Corte 3)
+
+    Deployment_Node(dispositivo, "Computador o celular", "Safari, Chrome o Edge") {
+        Container(pwa, "Página web / PWA", "HTML, CSS, módulos ES, Leaflet", "La sirve la aplicación. sw.js guarda la interfaz para abrir sin red, nunca /api")
+    }
+
+    Deployment_Node(github, "GitHub", "github.com/DrearSanti/pet-finder-dyas") {
+        Deployment_Node(actions, "GitHub Actions", "Runner ubuntu-24.04") {
+            Container(cd, "Workflow CD", "cd.yml", "Jobs: Publicar imagen y Desplegar en Render y verificar")
+        }
+        Deployment_Node(ghcr, "GitHub Container Registry", "ghcr.io, paquete público") {
+            Container(imagen, "Imagen pet-finder", "ghcr.io/drearsanti/pet-finder:SHA", "Una por commit de main, y otra por tag v*. Nunca latest")
+        }
+    }
+
+    Deployment_Node(render, "Render", "Una misma región") {
+        Deployment_Node(web, "Servicio web pet-finder", "Imagen existente, HTTPS en pet-finder-akac.onrender.com") {
+            Container(app, "Aplicación Spring Boot", "Java 17, Spring Boot 4.1.1", "API REST, casos de uso y dominio hexagonal. /actuator/info dice el commit")
+        }
+        Deployment_Node(pg, "PostgreSQL de Render", "Plan gratis, URL interna") {
+            ContainerDb(db, "Base pet-finder-db", "PostgreSQL, esquema con Flyway", "Reportes y avistamientos")
+        }
+    }
+
+    System_Ext(claude, "API de Claude", "Anthropic")
+    System_Ext(mapa, "Teselas del mapa", "CARTO u OpenStreetMap")
+    System_Ext(cdn, "cdnjs y Google Fonts", "Leaflet con SRI y tipografías")
+
+    Rel(pwa, app, "Página y /api", "JSON por HTTPS")
+    Rel(pwa, mapa, "Teselas", "HTTPS")
+    Rel(pwa, cdn, "Leaflet y fuentes", "HTTPS")
+    Rel(app, db, "Lee y escribe", "JDBC")
+    Rel(app, claude, "Extrae datos del borrador", "HTTPS")
+    Rel(cd, imagen, "Construye y publica", "docker push")
+    Rel(cd, app, "Deploy hook con la imagen del commit", "HTTPS")
+    Rel(app, imagen, "Render descarga esta imagen", "HTTPS")
+```
+
+| Elemento | Dónde corre | Cómo se configura | Qué paso del pipeline lo toca |
+|---|---|---|---|
+| Imagen `ghcr.io/drearsanti/pet-finder` | GitHub Container Registry | `Dockerfile` de dos etapas; recibe `PETFINDER_COMMIT` y `PETFINDER_VERSION` al construirse | `Publicar imagen`: la construye, la publica con el SHA (y la versión si hay tag) y comprueba que arranca y dice su commit |
+| Servicio web `pet-finder` | Render, en modo de imagen existente | Variables en el panel de Render: `SPRING_DATASOURCE_*`, `ANTHROPIC_API_KEY`, `PETFINDER_IA_*` y la clave de CARTO. `PORT` lo pone Render | `Desplegar en Render y verificar`: llama al deploy hook (`RENDER_DEPLOY_HOOK_URL`, en el entorno `produccion`), espera el SHA nuevo en `/actuator/info` y corre la prueba de humo y `perf/scripts/corta.js` |
+| Base `pet-finder-db` | PostgreSQL de Render, en la misma región | La aplicación la alcanza por la URL interna; Flyway crea el esquema al arrancar | Ninguno directamente: la migran la aplicación y Flyway en cada arranque |
+| Página web / PWA | El navegador de cada persona | La sirve la aplicación; las cabeceras de seguridad limitan de dónde puede cargar scripts, estilos e imágenes | Llega con la imagen |
+
+**En local**, el mismo sistema se levanta con `docker compose up`: la aplicación, construida desde el `Dockerfile`, y `postgres:18.6-alpine`, en la red de Compose y con las credenciales de `.env`.

@@ -43,9 +43,16 @@ public class ExtractorRegex implements ExtractorDatosReporte {
      * arroba hacía que cada posición recorriera el resto del texto: 100 KB de
      * letras ocupaban un núcleo 17 segundos. Con topes cada intento revisa unos
      * cientos de caracteres y el costo crece en línea recta con el texto.
+     *
+     * La mirada atrás hace que un correo solo empiece donde empieza la palabra.
+     * Sin ella, cada letra de una racha larga sin arroba volvía a leer las 64
+     * siguientes: 100 KB costaban 6,5 millones de pasos, más de un segundo en
+     * un runner de CI recién arrancado. Con ella, las letras de en medio se
+     * descartan en un paso. El resultado no cambia: el correo más a la
+     * izquierda ya empezaba en el borde de la palabra.
      */
     private static final Pattern CORREO = Pattern.compile(
-            "[\\w.+-]{1,64}@[\\w-]{1,63}(?:\\.[\\w-]{1,63}){1,8}");
+            "(?<![\\w.+-])[\\w.+-]{1,64}@[\\w-]{1,63}(?:\\.[\\w-]{1,63}){1,8}");
 
     /**
      * "…en Chía mi número es…": a partir de aquí la frase habla del contacto y

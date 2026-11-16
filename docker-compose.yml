@@ -5,7 +5,7 @@ name: pet-finder
 services:
   app:
     build: .
-    image: proyecto:dev
+    image: pet-finder:local
     ports:
       - "8080:8080"
     environment:
@@ -32,6 +32,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Mismo endpoint que el HEALTHCHECK del Dockerfile, escrito aquí para que se vea qué espera
+    # docker compose up --wait (Spring Boot listo, no solo el contenedor arrancado) sin abrir la imagen.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 3s
+      start_period: 60s
+      retries: 5
     restart: unless-stopped
 
   db:
