@@ -22,6 +22,7 @@ Corte 3: entrega continua y segura. Lo que ya está en `main`:
 
 ### Cambiado
 
+- La **carga corta del CD** contra Render corre a 6 peticiones por segundo durante 330 s, con los mismos umbrales de latencia y errores; la capacidad de 30 req/s la exige `despliegue-y-verificacion` en cada PR. Render se queda en el plan gratis (revisión de ADR-004, M7).
 - La lista de casos activos sale en **una sola consulta**, con un tope de 200 casos, y `ver reportes` por voz devuelve los 10 más recientes (S8).
 - Las **reglas de arquitectura** de ArchUnit son más estrictas: la consola también entra solo por los puertos, y cada adaptador de salida queda aislado de los demás (S4).
 - El **repositorio quedó ordenado**: el README empieza por "Empieza aquí" y el mapa de la rúbrica, y el material del Corte 1 pasó a `docs/corte-1/` (M3).
