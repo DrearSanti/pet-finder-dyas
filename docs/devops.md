@@ -69,7 +69,9 @@ Todo el pipeline usa `permissions: contents: read` arriba de cada workflow; los 
 - CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773649336
 - Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773648728
 
-Esa corrida es anterior a A6: no incluye `imagen-y-escaneo` ni `despliegue-y-verificacion`. **[Pendiente (A8): medir otra vez cuando A6 esté en `main` y poner aquí el enlace; la rúbrica cuenta hasta antes del despliegue y la carga.]**
+Esa corrida es anterior a A6: no incluye `imagen-y-escaneo` ni `despliegue-y-verificacion`. Medido otra vez con A6 en el PR #83 (2026-11-17), donde corren los once checks obligatorios: **2 min 29 s** hasta antes del despliegue y la carga (de 00:08:25 a 00:10:54 UTC, cuando termina `imagen-y-escaneo`, el más lento), y **4 min 43 s** con `despliegue-y-verificacion`, que levanta la imagen con PostgreSQL y corre la prueba de humo y la carga corta (hasta las 00:13:08).
+- CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43985165261
+- Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43985165244
 
 ## 4. Corrida diaria
 
@@ -124,7 +126,7 @@ Para revertir también el código (no solo lo desplegado): `git revert <sha-del-
 
 **Primera ejecución real (2026-11-16), en rojo, y lo que se corrigió:** https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983664571. La reversión a `v2.1.0` funcionó: Render pasó a correr `a2b8887` y la prueba de humo pasó. Pero la carga corta falló (p95 de 1,3 s), porque en medio entró el merge del #74 y su CD desplegó mientras Revertir medía: `cd.yml` usaba su propio grupo de concurrencia (`cd-<rama>`) y no `despliegue-produccion`, así que la promesa de "un despliegue a la vez" solo la cumplía `revertir.yml`. Se corrigió poniendo el job `desplegar` de `cd.yml` en el grupo `despliegue-produccion`.
 
-**Ejecución en verde:** **[Pendiente (Mateo, M8): enlace a la corrida de `revertir.yml` después de la corrección.]**
+**Ejecución en verde (2026-11-16, ya con la corrección):** https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43994285937. Revirtió a `v2.1.0`: `/actuator/info` pasó a mostrar el commit `a2b8887` con `"version":"v2.1.0"`, la prueba de humo pasó y la carga corta dio p95 de 178 ms, 0 % de errores, 1983 peticiones medidas y 0 iteraciones perdidas. Después, el siguiente merge a `main` volvió a desplegar la versión actual.
 
 ## 8. Pruebas en rojo
 
