@@ -47,7 +47,7 @@ jobs:
         run: ./gitleaks git . --log-opts="HEAD" --redact --verbose --exit-code 1 --report-format sarif --report-path gitleaks.sarif
       - name: Publicar reporte de secretos
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reporte-secretos
           path: gitleaks.sarif
@@ -85,7 +85,7 @@ jobs:
         run: python3 scripts/umbral-sarif.py sarif-results 7.0 .github/codeql/excepciones.txt
       - name: Publicar SARIF
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sarif-${{ matrix.lenguaje }}
           path: sarif-results/
@@ -130,7 +130,7 @@ jobs:
         run: cat trivy-sca.txt 2>/dev/null || echo "Trivy no generó reporte"
       - name: Publicar reporte de SCA
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reporte-sca
           path: trivy-sca.txt
