@@ -65,13 +65,19 @@ Todo el pipeline usa `permissions: contents: read` arriba de cada workflow; los 
 - **Docker:** `imagen-y-escaneo` construye con la caché `type=gha`. El `Dockerfile` copia primero solo el `pom.xml` y descarga las dependencias en una capa propia, así que mientras el pom no cambie esa capa no se vuelve a descargar. Por eso no usa `--mount=type=cache`, que vive solo en la máquina que construye y no viaja en la caché de Actions (A3).
 - **Paralelo:** después de `construccion`, las cuatro etapas de pruebas y la imagen corren al mismo tiempo, y Seguridad corre en paralelo con CI.
 
-**Tiempo medido** en el merge del PR #54 a `main` (2026-11-15), desde que arrancó el primer job hasta que terminó el último de CI y Seguridad: **2 min 5 s** (de 23:13:41 a 23:15:46 UTC; el más lento fue `SAST (java-kotlin)`).
-- CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773649336
-- Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773648728
+**Tiempo medido** en el merge del PR #74 (A6) a `main` (2026-11-16), con el pipeline completo: CI y Seguridad en paralelo, desde que arrancó el primer job hasta que terminó el último que cuenta la rúbrica (todo menos el despliegue y la carga):
 
-Esa corrida es anterior a A6: no incluye `imagen-y-escaneo` ni `despliegue-y-verificacion`. Medido otra vez con A6 en el PR #83 (2026-11-17), donde corren los once checks obligatorios: **2 min 29 s** hasta antes del despliegue y la carga (de 00:08:25 a 00:10:54 UTC, cuando termina `imagen-y-escaneo`, el más lento), y **4 min 43 s** con `despliegue-y-verificacion`, que levanta la imagen con PostgreSQL y corre la prueba de humo y la carga corta (hasta las 00:13:08).
-- CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43985165261
-- Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43985165244
+| Tramo | Desde | Hasta | Duración |
+|---|---|---|---|
+| Integración: construcción, pruebas, arquitectura, imagen y escaneo, y los tres controles de Seguridad | 23:58:12 UTC | 00:01:07 UTC (`imagen-y-escaneo`, el más lento; le sigue `SAST (java-kotlin)` a las 00:00:41) | **2 min 55 s** |
+| Con `despliegue-y-verificacion` (Compose, humo y k6), que la rúbrica no cuenta | 23:58:12 UTC | 00:04:36 UTC | 6 min 24 s |
+
+Los dos quedan por debajo de los 10 minutos. Las tres corridas de ese commit terminaron en verde:
+- CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740657
+- Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740661
+- CD: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740834
+
+Antes de A6 (merge del PR #54, 2026-11-15) la integración tardaba 2 min 5 s; los 50 s de diferencia son la construcción y el escaneo de la imagen.
 
 ## 4. Corrida diaria
 
