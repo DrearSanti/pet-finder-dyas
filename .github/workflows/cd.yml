@@ -93,6 +93,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # Un despliegue a la vez en producción, sea del CD o de una reversión: el mismo grupo que revertir.yml.
+    # Sin esto, un merge durante una reversión desplegaba en medio de su prueba de carga y ambas fallaban.
+    concurrency:
+      group: despliegue-produccion
+      cancel-in-progress: false
     # El entorno guarda el deploy hook como secreto (tarea S3) y deja en GitHub el historial de despliegues
     environment:
       name: produccion

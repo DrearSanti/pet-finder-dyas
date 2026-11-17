@@ -29,20 +29,20 @@ Lo que se puede hacer: reportar una mascota perdida o encontrada con la voz o es
 
 ## Mapa de la rúbrica del Corte 3
 
-Dónde está o va a estar cada criterio. Lo que todavía no existe aparece sin enlace; el avance de cada tarea está en el [plan del Corte 3](docs/plan-corte-3.md).
+Dónde está cada criterio. El reparto de tareas está en el [plan del Corte 3](docs/plan-corte-3.md) y lo que no se alcanzó, en los riesgos aceptados de [`docs/seguridad.md`](docs/seguridad.md#4-riesgos-aceptados) y en [`docs/evolucion.md`](docs/evolucion.md).
 
 | Criterio | Puntos | Dónde se ve | Tareas |
 |---|---|---|---|
-| 1. Contenerización | 5 | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml), `.env.example` | A3 |
-| 2. Integración continua | 15 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml), protección de `main`, `CHANGELOG.md` y versiones | A1, A2, A8, S1, S2, M11 |
+| 1. Contenerización | 5 | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml), [`.env.example`](.env.example) | A3, A7 |
+| 2. Integración continua | 15 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml), protección de `main` ([`docs/devops.md`](docs/devops.md)), [`CHANGELOG.md`](CHANGELOG.md) y las [versiones](https://github.com/DrearSanti/pet-finder-dyas/releases) | A1, A2, A6, A8, S1, S2, M11 |
 | 3. Arquitectura verificada en el pipeline | 15 | [`ReglasArquitecturaTest`](src/test/java/petfinder/arquitectura/ReglasArquitecturaTest.java), [`perf/scripts/corta.js`](perf/scripts/corta.js) después de cada despliegue, [tabla de trazabilidad](#tabla-de-trazabilidad-del-corte-2) | S4, M4, M7, S15 |
-| 4. DevSecOps | 20 | `docs/seguridad.md` (amenazas y hallazgos), [`.github/workflows/seguridad.yml`](.github/workflows/seguridad.yml), el pull request bloqueado | S5, S6, A5, A6, S11, S12, S13 |
-| 5. Despliegue continuo | 15 | [`.github/workflows/cd.yml`](.github/workflows/cd.yml), [`.github/workflows/revertir.yml`](.github/workflows/revertir.yml), la imagen en GHCR y la app en Render | M5, M6, M7, M8, S3 |
-| Documentación y repositorio | 10 | Este README, `docs/devops.md`, `docs/seguridad.md`, la vista de despliegue, `docs/adr/` y `docs/evolucion.md` | A12, S11, S13, S14, M12, M13 |
-| Guía de implementación | 10 | `docs/implementacion.md` | A13 |
-| Presentación y demostración | 10 | En vivo: un cambio que se despliega y otro que el pipeline bloquea | M15 y los tres |
-| Bono: DAST con OWASP ZAP | +5 | Etapa del pipeline contra la app desplegada | M14 |
-| Bono: observabilidad | +5 | Opcional, si queda tiempo | B1 |
+| 4. DevSecOps | 20 | [`docs/seguridad.md`](docs/seguridad.md) (amenazas y hallazgos), [`.github/workflows/seguridad.yml`](.github/workflows/seguridad.yml), [ADR-003](docs/adr/ADR-003-seguridad-del-pipeline.md), el pull request bloqueado | S5, S6, A5, A6, S11, S12, S13 |
+| 5. Despliegue continuo | 15 | [`.github/workflows/cd.yml`](.github/workflows/cd.yml), [`.github/workflows/revertir.yml`](.github/workflows/revertir.yml), [ADR-004](docs/adr/ADR-004-estrategia-de-despliegue.md), la [imagen en GHCR](https://github.com/DrearSanti/pet-finder-dyas/pkgs/container/pet-finder) y la app en Render | M5, M6, M7, M8, S3 |
+| Documentación y repositorio | 10 | Este README, [`docs/devops.md`](docs/devops.md), [`docs/seguridad.md`](docs/seguridad.md), la [vista de despliegue](docs/arquitectura.md#8-vista-de-despliegue-corte-3), [`docs/adr/`](docs/adr/) y [`docs/evolucion.md`](docs/evolucion.md) | A12, S11, S13, S14, M12, M13 |
+| Guía de implementación | 10 | [`docs/implementacion.md`](docs/implementacion.md) | A13 |
+| Presentación y demostración | 10 | En vivo: un cambio que se despliega y otro que el pipeline bloquea ([guion](docs/presentacion-corte-3.md)) | M15 y los tres |
+| Bono: DAST con OWASP ZAP | +5 | No se hizo: se priorizó dejar el CD en verde | M14 |
+| Bono: observabilidad | +5 | No se hizo | B1 |
 
 ---
 
