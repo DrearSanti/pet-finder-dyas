@@ -65,11 +65,19 @@ Todo el pipeline usa `permissions: contents: read` arriba de cada workflow; los 
 - **Docker:** `imagen-y-escaneo` construye con la caché `type=gha`. El `Dockerfile` copia primero solo el `pom.xml` y descarga las dependencias en una capa propia, así que mientras el pom no cambie esa capa no se vuelve a descargar. Por eso no usa `--mount=type=cache`, que vive solo en la máquina que construye y no viaja en la caché de Actions (A3).
 - **Paralelo:** después de `construccion`, las cuatro etapas de pruebas y la imagen corren al mismo tiempo, y Seguridad corre en paralelo con CI.
 
-**Tiempo medido** en el merge del PR #54 a `main` (2026-11-15), desde que arrancó el primer job hasta que terminó el último de CI y Seguridad: **2 min 5 s** (de 23:13:41 a 23:15:46 UTC; el más lento fue `SAST (java-kotlin)`).
-- CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773649336
-- Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773648728
+**Tiempo medido** en el merge del PR #74 (A6) a `main` (2026-11-16), con el pipeline completo: CI y Seguridad en paralelo, desde que arrancó el primer job hasta que terminó el último que cuenta la rúbrica (todo menos el despliegue y la carga):
 
-Esa corrida es anterior a A6: no incluye `imagen-y-escaneo` ni `despliegue-y-verificacion`. **[Pendiente (A8): medir otra vez cuando A6 esté en `main` y poner aquí el enlace; la rúbrica cuenta hasta antes del despliegue y la carga.]**
+| Tramo | Desde | Hasta | Duración |
+|---|---|---|---|
+| Integración: construcción, pruebas, arquitectura, imagen y escaneo, y los tres controles de Seguridad | 23:58:12 UTC | 00:01:07 UTC (`imagen-y-escaneo`, el más lento; le sigue `SAST (java-kotlin)` a las 00:00:41) | **2 min 55 s** |
+| Con `despliegue-y-verificacion` (Compose, humo y k6), que la rúbrica no cuenta | 23:58:12 UTC | 00:04:36 UTC | 6 min 24 s |
+
+Los dos quedan por debajo de los 10 minutos. Las tres corridas de ese commit terminaron en verde:
+- CI: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740657
+- Seguridad: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740661
+- CD: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740834
+
+Antes de A6 (merge del PR #54, 2026-11-15) la integración tardaba 2 min 5 s; los 50 s de diferencia son la construcción y el escaneo de la imagen.
 
 ## 4. Corrida diaria
 
@@ -102,7 +110,7 @@ Un despliegue a la vez: `cd.yml` y `revertir.yml` comparten el grupo de concurre
 
 **Estado al 2026-11-15:** el despliegue y la prueba de humo pasan, pero la carga corta contra Render falla en el plan gratis (p95 de unos 10 s y 29 % de errores; la misma imagen en Compose da p95 de 11 ms y 0 % de errores). Ejemplo: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773648786. Falló tres de tres, todas por capacidad: en la última, Render gratis alcanzó unas 16 req/s, sin errores pero con p95 de 9,55 s.
 
-**Decisión del 2026-11-16 (revisión de ADR-004):** el servicio se queda en el plan gratis. La capacidad de 30 req/s se exige en cada PR con `despliegue-y-verificacion`, y el CD mide contra Render los mismos umbrales a 6 req/s durante 330 s (`ITERACIONES_POR_SEGUNDO=2` y `MEDICION=330s` en `cd.yml` y `revertir.yml`). **[Pendiente (Mateo, M7): enlace de la primera corrida de CD en verde con esta tasa.]**
+**Decisión del 2026-11-16 (revisión de ADR-004):** el servicio se queda en el plan gratis. La capacidad de 30 req/s se exige en cada PR con `despliegue-y-verificacion`, y el CD mide contra Render los mismos umbrales a 6 req/s durante 330 s (`ITERACIONES_POR_SEGUNDO=2` y `MEDICION=330s` en `cd.yml` y `revertir.yml`). Primera corrida de CD en verde con esta tasa (merge del PR #74, 2026-11-16): https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740834
 
 ## 7. Reversión
 
