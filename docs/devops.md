@@ -110,7 +110,7 @@ Un despliegue a la vez: `cd.yml` y `revertir.yml` comparten el grupo de concurre
 
 **Estado al 2026-11-15:** el despliegue y la prueba de humo pasan, pero la carga corta contra Render falla en el plan gratis (p95 de unos 10 s y 29 % de errores; la misma imagen en Compose da p95 de 11 ms y 0 % de errores). Ejemplo: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43773648786. Falló tres de tres, todas por capacidad: en la última, Render gratis alcanzó unas 16 req/s, sin errores pero con p95 de 9,55 s.
 
-**Decisión del 2026-11-16 (revisión de ADR-004):** el servicio se queda en el plan gratis. La capacidad de 30 req/s se exige en cada PR con `despliegue-y-verificacion`, y el CD mide contra Render los mismos umbrales a 6 req/s durante 330 s (`ITERACIONES_POR_SEGUNDO=2` y `MEDICION=330s` en `cd.yml` y `revertir.yml`). Primera corrida de CD en verde con esta tasa (merge del PR #74, 2026-11-16): https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983740834
+**Decisión del 2026-11-16 (revisión de ADR-004):** el servicio se queda en el plan gratis. La capacidad de 30 req/s se exige en cada PR con `despliegue-y-verificacion`, y el CD mide contra Render los mismos umbrales a 6 req/s durante 330 s (`ITERACIONES_POR_SEGUNDO=2` y `MEDICION=330s` en `cd.yml` y `revertir.yml`). Primera corrida de CD en verde con esta tasa, el 2026-11-16 sobre el merge del #81: https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43977291762. Contra Render gratis dio p95 de 198 ms (entre 143 y 195 ms por operación), 0 % de errores en 2073 peticiones, 1983 peticiones medidas (mínimo 1800) y 0 iteraciones perdidas.
 
 ## 7. Reversión
 
@@ -130,7 +130,9 @@ Se vuelve a una versión que ya está publicada en GHCR, sin reconstruir nada:
 
 Para revertir también el código (no solo lo desplegado): `git revert <sha-del-merge> -m 1` en una rama y un PR, que al integrarse se despliega solo.
 
-**Ejecución real:** **[Pendiente (Mateo, M8): enlace a una corrida de `revertir.yml` en verde, con la forma `https://github.com/DrearSanti/pet-finder-dyas/actions/runs/<id>`.]**
+**Primera ejecución real (2026-11-16), en rojo, y lo que se corrigió:** https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43983664571. La reversión a `v2.1.0` funcionó: Render pasó a correr `a2b8887` y la prueba de humo pasó. Pero la carga corta falló (p95 de 1,3 s), porque en medio entró el merge del #74 y su CD desplegó mientras Revertir medía: `cd.yml` usaba su propio grupo de concurrencia (`cd-<rama>`) y no `despliegue-produccion`, así que la promesa de "un despliegue a la vez" solo la cumplía `revertir.yml`. Se corrigió poniendo el job `desplegar` de `cd.yml` en el grupo `despliegue-produccion`.
+
+**Ejecución en verde (2026-11-16, ya con la corrección):** https://github.com/DrearSanti/pet-finder-dyas/actions/runs/43994285937. Revirtió a `v2.1.0`: `/actuator/info` pasó a mostrar el commit `a2b8887` con `"version":"v2.1.0"`, la prueba de humo pasó y la carga corta dio p95 de 178 ms, 0 % de errores, 1983 peticiones medidas y 0 iteraciones perdidas. Después, el siguiente merge a `main` volvió a desplegar la versión actual.
 
 ## 8. Pruebas en rojo
 

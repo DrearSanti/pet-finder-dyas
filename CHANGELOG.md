@@ -8,10 +8,23 @@ Desde el Corte 3, cada versión publicada por el pipeline queda como imagen en `
 
 ## Sin publicar
 
-Corte 3: entrega continua y segura. Lo que ya está en `main`:
+Nada todavía.
+
+## [3.0.0] - 2026-11-16
+
+Corte 3: entrega continua y segura. Cada cambio pasa por un pipeline que verifica la arquitectura, la seguridad y el rendimiento, y lo que pasa llega solo a producción.
+
+El tag intermedio `v2.1.0` (mismo día, commit `a2b8887`) marca el primer despliegue continuo en verde y sirvió para probar la reversión; su contenido está incluido en esta versión.
 
 ### Agregado
 
+- **Integración continua** (`ci.yml`): construcción y, en paralelo, unitarias con umbral de cobertura del dominio, reglas de arquitectura, integración e interfaz con Selenium, en cada push y cada pull request. `main` protegida: sin push directo, con aprobación de otro integrante y checks obligatorios (A1, A2).
+- **Despliegue continuo** (`cd.yml`): cada merge a `main` publica la imagen en GHCR con el SHA del commit (y con la versión en un tag), la despliega en Render con un deploy hook, espera a que `/actuator/info` muestre ese SHA y corre la prueba de humo y la carga corta (M5, M6, M7). Decisión en [ADR-004](docs/adr/ADR-004-estrategia-de-despliegue.md).
+- **Reversión** (`revertir.yml`): vuelve a desplegar una versión ya publicada por su tag o su SHA, sin reconstruir, y la verifica igual que el CD (M8).
+- **Verificación en cada PR**: `imagen-y-escaneo` construye y escanea la imagen, y `despliegue-y-verificacion` la levanta con PostgreSQL y corre la prueba de humo y la carga corta a 30 req/s (A6). Prueba de humo del flujo principal en `scripts/humo-flujo.sh` (A4).
+- **Análisis de dependencias** con Trivy y Dependabot, sin consultas a Maven Central en el pipeline (A5), y check `acciones-fijadas`, que exige que toda acción de GitHub esté fijada por su SHA completo (A8).
+- **Código de gestión** en el núcleo para resolver o cerrar casos, con código de administrador opcional (S9), y **límite de peticiones** por IP y global para el asistente, la voz y los reportes (S10).
+- Documentación del corte: modelo de amenazas y hallazgos en [`docs/seguridad.md`](docs/seguridad.md) y [ADR-003](docs/adr/ADR-003-seguridad-del-pipeline.md), el pipeline en [`docs/devops.md`](docs/devops.md), la [guía de implementación](docs/implementacion.md), la [evolución desde el Corte 2](docs/evolucion.md) y el [guion de la presentación](docs/presentacion-corte-3.md).
 - Persistencia real en **PostgreSQL** con migraciones de **Flyway**; Hibernate solo valida el esquema. Los IDs de los reportes siguen la numeración después de un reinicio (S7).
 - **Control de secretos con Gitleaks** sobre todo el historial de Git, en el workflow `Seguridad`, con corrida diaria programada (S5).
 - **Análisis estático con CodeQL** para Java y JavaScript, con un paso propio que detiene el pipeline ante hallazgos de severidad 7.0 o más sin tratar (S6).
@@ -22,10 +35,15 @@ Corte 3: entrega continua y segura. Lo que ya está en `main`:
 
 ### Cambiado
 
+- La **clave de CARTO** del mapa se lee al arrancar desde `PETFINDER_CLAVE_CARTO` y ya no queda dentro de la imagen (A7).
 - La **carga corta del CD** contra Render corre a 6 peticiones por segundo durante 330 s, con los mismos umbrales de latencia y errores; la capacidad de 30 req/s la exige `despliegue-y-verificacion` en cada PR. Render se queda en el plan gratis (revisión de ADR-004, M7).
 - La lista de casos activos sale en **una sola consulta**, con un tope de 200 casos, y `ver reportes` por voz devuelve los 10 más recientes (S8).
 - Las **reglas de arquitectura** de ArchUnit son más estrictas: la consola también entra solo por los puertos, y cada adaptador de salida queda aislado de los demás (S4).
 - El **repositorio quedó ordenado**: el README empieza por "Empieza aquí" y el mapa de la rúbrica, y el material del Corte 1 pasó a `docs/corte-1/` (M3).
+
+### Corregido
+
+- El **CD y Revertir ya no despliegan al mismo tiempo**: el job `desplegar` de `cd.yml` entró al grupo de concurrencia `despliegue-produccion`, el mismo de `revertir.yml`. Lo encontró la primera prueba real de reversión, en la que un merge desplegó en medio de su carga (M8).
 
 ### Seguridad
 
@@ -60,6 +78,7 @@ Corte 1: el problema y el diseño.
 - Repositorio en memoria detrás de una interfaz, demostración automática y menú de consola.
 - Modelado UML y cómic de presentación del problema ([`docs/corte-1/`](docs/corte-1/README.md)).
 
-[Sin publicar]: https://github.com/DrearSanti/pet-finder-dyas/compare/v2.0.0...HEAD
+[Sin publicar]: https://github.com/DrearSanti/pet-finder-dyas/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/DrearSanti/pet-finder-dyas/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/DrearSanti/pet-finder-dyas/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/DrearSanti/pet-finder-dyas/releases/tag/v1.0.0
