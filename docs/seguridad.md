@@ -2,7 +2,7 @@
 
 Modelo de amenazas, controles del pipeline con su umbral y registro de cada hallazgo con su decisión. Parte del borrador del Apéndice A de [`plan-corte-3.md`](plan-corte-3.md), que salió de la auditoría del 4 de noviembre de 2026, y lo lleva a la mitigación y la verificación finales.
 
-**Estado de este documento (16 de noviembre de 2026).** Lo que ya está en `main` aparece como verificado, con la prueba o el check que lo comprueba. Lo que depende de un PR abierto dice cuál: el escaneo de la imagen (A6, #74) y el código de gestión en los controladores web (A9).
+**Estado de este documento (16 de noviembre de 2026, cierre del Corte 3).** Los cuatro controles corren en el pipeline como checks obligatorios de `main`, incluido el escaneo de la imagen (A6, [#74](https://github.com/DrearSanti/pet-finder-dyas/pull/74)). Lo único que no se conectó es el código de gestión en los controladores web (A9), que se recortó y queda como riesgo aceptado (sección 4).
 
 ## 1. Modelo de amenazas
 
