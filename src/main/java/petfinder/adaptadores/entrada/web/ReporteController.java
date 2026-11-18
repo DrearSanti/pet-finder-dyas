@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import petfinder.adaptadores.entrada.web.dto.ReporteDTO;
 import petfinder.adaptadores.entrada.web.dto.SolicitudReporteDTO;
 import petfinder.application.port.entrada.GestionReportes;
+import petfinder.application.service.ServicioReportes;
 import petfinder.domain.model.ReporteMascota;
 
 /**
@@ -35,7 +36,8 @@ public class ReporteController {
 
     private final GestionReportes gestionReportes;
 
-    public ReporteController(GestionReportes gestionReportes) {
+    // Atajo: pedir el servicio concreto en vez del puerto
+    public ReporteController(ServicioReportes gestionReportes) {
         this.gestionReportes = gestionReportes;
     }
 
